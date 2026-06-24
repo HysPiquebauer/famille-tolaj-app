@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Famille Tolaj — Gestion Financière PRO</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --bg: #f0f2f8;
+    --card: #ffffff;
+    --primary: #5b4fcf;
+    --primary-light: #7b6fe0;
+    --primary-dark: #3d35a0;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f59e0b;
+    --blue: #3b82f6;
+    --text: #1e1b3a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --header-h: 80px;
+  }
+
+  body.dark-mode {
+    --bg: #1a1a2e;
+    --card: #16213e;
+    --text: #eaeaea;
+    --muted: #a0a0a0;
+    --border: #2d3561;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  header {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 60%, #8b5cf6 100%);
+    color: white;
+    padding: 0 24px;
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(91,79,207,.3);
+  }
+
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon { font-size: 2rem; }
+  .header-title { font-size: 1.3rem; font-weight: 700; }
+  .header-sub { font-size: .78rem; opacity: .75; }
+  .header-actions { display: flex; align-items: center; gap: 16px; }
+  .toggle-dark { background: rgba(255,255,255,.2); border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+  .toggle-dark:hover { background: rgba(255,255,255,.3); }
+
+  nav {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0;
+    padding: 0 24px;
+    position: sticky;
+    top: var(--header-h);
+    z-index: 99;
+    overflow-x: auto;
+  }
+
+  nav button {
+    padding: 14px 20px;
+    border: none;
+    background: none;
+    font-size: .88rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+
+  nav button.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  nav button:hover:not(.active) {
+    color: var(--text);
+  }
+
+  main {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .kpi-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px 24px;
+    border-left: 5px solid var(--border);
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    transition: transform 0.2s;
+  }
+
+  .kpi-card:hover { transform: translateY(-2px); }
+
+  .kpi-card.green { border-left-color: var(--green); }
+  .kpi-card.red { border-left-color: var(--red); }
+  .kpi-card.blue { border-left-color: var(--blue); }
+  .kpi-card.orange { border-left-color: var(--orange); }
+
+  .kpi-label {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .kpi-value {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--primary);
+    margin-bottom: 6px;
+  }
+
+  .kpi-card.green .kpi-value { color: var(--green); }
+  .kpi-card.red .kpi-value { color: var(--red); }
+  .kpi-card.blue .kpi-value { color: var(--blue); }
+  .kpi-card.orange .kpi-value { color: var(--orange); }
+
+  .kpi-sub {
+    font-size: .75rem;
+    color: var(--muted);
+  }
+
+  .charts-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: .95rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .chart-wrap {
+    position: relative;
+    height: 300px;
+  }
+
+  .gauge-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px 0;
+  }
+
+  .gauge-svg {
+    width: 250px;
+    height: 150px;
+  }
+
+  .gauge-label {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--primary);
+    margin-top: 10px;
+  }
+
+  .gauge-sub {
+    font-size: .85rem;
+    color: var(--muted);
+  }
+
+  .progress-section {
+    margin: 20px 0;
+  }
+
+  .progress-label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .progress-bar {
+    background: var(--border);
+    border-radius: 10px;
+    height: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.05);
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    border-radius: 10px;
+    transition: width 0.4s ease;
+  }
+
+  .table-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    margin-bottom: 16px;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+
+  td {
+    padding: 10px 12px;
+    font-size: .88rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(91,79,207,.05); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 700;
+  }
+
+  .badge.fixe { background: #e0e7ff; color: #4338ca; }
+  .badge.variable { background: #fef3c7; color: #d97706; }
+
+  .edit-input {
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: .88rem;
+    font-family: inherit;
+    color: var(--text);
+    width: 100%;
+    transition: all .15s;
+  }
+
+  .edit-input:hover { border-color: var(--border); }
+  .edit-input:focus { border-color: var(--primary); outline: none; background: rgba(91,79,207,.05); }
+
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .add-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .add-btn:hover { background: var(--primary-light); }
+
+  .del-btn {
+    background: none;
+    border: none;
+    color: #cbd5e1;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color .15s;
+  }
+
+  .del-btn:hover { color: var(--red); }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 32px;
+    min-width: 360px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  }
+
+  .modal-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  .form-group {
+    margin-bottom: 14px;
+  }
+
+  .form-group label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: .9rem;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--card);
+    transition: border-color .15s;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--primary);
+    outline: none;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 24px;
+    font-size: .9rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .btn-primary:hover { background: var(--primary-light); }
+
+  .btn-cancel {
+    background: var(--border);
+    color: var(--text);
+    border: none;
+    border-radius: 10px;
+    padding: 11px 24px;
+    font-size: .9rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .btn-cancel:hover { background: rgba(91,79,207,.1); }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1e1b3a;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: .88rem;
+    font-weight: 600;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all .3s;
+    z-index: 9999;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  .reminder-banner {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    right: 0;
+    background: linear-gradient(90deg, var(--red), #dc2626);
+    color: white;
+    padding: 12px 24px;
+    z-index: 98;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+  }
+
+  .reminder-banner.hidden { display: none; }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .event-item {
+    background: rgba(91,79,207,.05);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--primary);
+  }
+
+  .event-date {
+    font-size: .75rem;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .event-title {
+    font-weight: 700;
+    margin: 4px 0;
+    color: var(--text);
+  }
+
+  .event-desc {
+    font-size: .85rem;
+    color: var(--muted);
+  }
+
+  .vacation-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    margin-bottom: 16px;
+    border-left: 5px solid var(--primary);
+  }
+
+  .vacation-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  .vacation-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: .9rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .vacation-stat:last-child { border-bottom: none; }
+
+  .vacation-stat-label { color: var(--muted); }
+  .vacation-stat-value { font-weight: 700; color: var(--primary); }
+
+  .insight-box {
+    background: linear-gradient(135deg, rgba(91,79,207,.1) 0%, rgba(139,92,246,.1) 100%);
+    border-left: 4px solid var(--primary);
+    padding: 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+  }
+
+  .insight-title {
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .insight-text {
+    font-size: .9rem;
+    color: var(--text);
+  }
+
+  .insight-warning {
+    border-left-color: var(--red);
+    background: linear-gradient(135deg, rgba(239,68,68,.1) 0%, rgba(220,38,38,.1) 100%);
+  }
+
+  .insight-success {
+    border-left-color: var(--green);
+    background: linear-gradient(135deg, rgba(34,197,94,.1) 0%, rgba(22,163,74,.1) 100%);
+  }
+
+  @media (max-width: 900px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-row { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    nav { overflow-x: scroll; }
+  }
+
+  @media (max-width: 600px) {
+    header { flex-direction: column; gap: 10px; height: auto; padding: 12px; }
+    .header-actions { width: 100%; }
+    .kpi-grid { grid-template-columns: 1fr; }
+    .modal { min-width: 90%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="reminder-banner hidden" id="reminderBanner">
+  ⚠️ <span id="reminderText"></span>
+</div>
+
+<header>
+  <div class="header-left">
+    <div class="header-icon">🏠</div>
+    <div>
+      <div class="header-title">Famille Tolaj</div>
+      <div class="header-sub">Gestion financière PRO · Meyrin, Genève</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="toggle-dark" onclick="toggleDarkMode()">🌙</button>
+    <button class="add-btn" onclick="openImportModal()" title="Importer depuis Google Sheet">📥 Importer</button>
+  </div>
+</header>
+
+<nav id="navTabs">
+  <button class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
+  <button onclick="showPage('budget',this)">💰 Budget</button>
+  <button onclick="showPage('revenus',this)">📈 Revenus</button>
+  <button onclick="showPage('agenda',this)">📅 Agenda</button>
+  <button onclick="showPage('enfants',this)">👧 Enfants</button>
+  <button onclick="showPage('analyse',this)">📊 Analyse</button>
+  <button onclick="showPage('patrimoine',this)">🏦 Patrimoine</button>
+  <button onclick="showPage('vacances',this)">✈️ Vacances</button>
+</nav>
+
+<main>
+
+<!-- ============ DASHBOARD ============ -->
+<div id="page-dashboard" class="page active">
+  <div class="kpi-grid">
+    <div class="kpi-card green">
+      <div class="kpi-label">💰 Revenus mensuels</div>
+      <div class="kpi-value" id="kpi-rev">—</div>
+      <div class="kpi-sub">Total</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">📤 Dépenses mensuelles</div>
+      <div class="kpi-value" id="kpi-dep">—</div>
+      <div class="kpi-sub">Total</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">💧 Liquidité mensuelle</div>
+      <div class="kpi-value" id="kpi-liq">—</div>
+      <div class="kpi-sub">Disponible</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">📊 Patrimoine total</div>
+      <div class="kpi-value" id="kpi-pat">—</div>
+      <div class="kpi-sub">Tous actifs</div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">📊 Répartition revenus</div>
+      <div class="chart-wrap"><canvas id="chartRev"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔴 Répartition dépenses</div>
+      <div class="chart-wrap"><canvas id="chartDep"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📈 Tendance 3 mois</div>
+    <div class="chart-wrap"><canvas id="chartTrend"></canvas></div>
+  </div>
+</div>
+
+<!-- ============ BUDGET ============ -->
+<div id="page-budget" class="page">
+  <div class="grid-2">
+    <div>
+      <div class="table-card">
+        <div class="section-title">
+          <span>💰 Revenus</span>
+          <button class="add-btn" onclick="openModal('rev')">+ Ajouter</button>
+        </div>
+        <table>
+          <thead><tr><th>Source</th><th>Montant</th><th>Type</th><th></th></tr></thead>
+          <tbody id="tbRev"></tbody>
+        </table>
+        <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border);display:flex;justify-content:space-between;font-weight:800;">
+          <span>Total</span>
+          <span id="totRev" style="color:var(--green)">—</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="table-card">
+        <div class="section-title">
+          <span>📤 Dépenses</span>
+          <button class="add-btn" onclick="openModal('dep')">+ Ajouter</button>
+        </div>
+        <table>
+          <thead><tr><th>Catégorie</th><th>Montant</th><th>Type</th><th></th></tr></thead>
+          <tbody id="tbDep"></tbody>
+        </table>
+        <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border);display:flex;justify-content:space-between;font-weight:800;">
+          <span>Total</span>
+          <span id="totDep" style="color:var(--red)">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <div class="section-title">
+      <span>🎯 Budgets par catégorie</span>
+      <button class="add-btn" onclick="openBudgetModal()">+ Ajouter budget</button>
+    </div>
+    <div id="budgetsList"></div>
+  </div>
+</div>
+
+<!-- ============ REVENUS ============ -->
+<div id="page-revenus" class="page">
+  <div class="card">
+    <div class="card-title">📈 Évolution des revenus</div>
+    <div class="chart-wrap" style="height:300px;"><canvas id="chartRevBar"></canvas></div>
+  </div>
+  <div class="table-card">
+    <div class="section-title"><span>💰 Détail des revenus</span></div>
+    <table>
+      <thead><tr><th>Source</th><th>Montant</th><th>Type</th><th>% du total</th></tr></thead>
+      <tbody id="tbRevDetail"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ AGENDA ============ -->
+<div id="page-agenda" class="page">
+  <div class="card">
+    <div class="section-title"><span>📅 Ajouter événement</span></div>
+    <div class="grid-2" style="margin-bottom:12px;">
+      <div class="form-group">
+        <label>Titre</label>
+        <input type="text" id="evTitre" placeholder="Ex: RDV médical Luna">
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="evDate">
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom:12px;">
+      <div class="form-group">
+        <label>Type</label>
+        <select id="evType">
+          <option>Famille</option>
+          <option>Événement scolaire</option>
+          <option>RDV médical</option>
+          <option>Anniversaire</option>
+          <option>Autre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Personnes concernées</label>
+        <select id="evPersonnes" multiple>
+          <option selected>Hysen</option>
+          <option selected>Egzona</option>
+          <option>Luna</option>
+          <option>Anisa</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="evDesc" placeholder="Détails..." rows="3"></textarea>
+    </div>
+    <button class="add-btn" onclick="addEvent()" style="width:100%;padding:10px;">Ajouter événement</button>
+  </div>
+  <div id="agendaList" style="margin-top:20px;"></div>
+</div>
+
+<!-- ============ ENFANTS ============ -->
+<div id="page-enfants" class="page">
+  <div class="grid-2" id="enfantsCards"></div>
+</div>
+
+<!-- ============ ANALYSE ============ -->
+<div id="page-analyse" class="page">
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">📊 Taux d'épargne</div>
+      <div class="kpi-value" id="anTaux">—</div>
+      <div class="kpi-sub">% des revenus</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">🎯 Budget vs Réel</div>
+      <div class="kpi-value" id="anBudget">—</div>
+      <div class="kpi-sub">Écart moyen</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">📈 Objectif épargne</div>
+      <div class="kpi-value" id="anObjectif">—</div>
+      <div class="kpi-sub">Cible annuelle</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">🔮 Patrimoine 5 ans</div>
+      <div class="kpi-value" id="anPatrimoine5">—</div>
+      <div class="kpi-sub">Projection</div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">💰 Budget vs Dépenses réelles</div>
+      <div class="chart-wrap"><canvas id="chartBudgetVsReal"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Composition du patrimoine</div>
+      <div class="chart-wrap"><canvas id="chartPatrimoine"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💡 Analyses intelligentes</div>
+    <div id="insights"></div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <button class="add-btn" onclick="exportPDF()" style="width:100%;padding:12px;justify-content:center;">📄 Exporter rapport PDF</button>
+  </div>
+</div>
+
+<!-- ============ PATRIMOINE ============ -->
+<div id="page-patrimoine" class="page">
+  <div class="kpi-grid">
+    <div class="kpi-card orange">
+      <div class="kpi-label">🏦 Patrimoine total</div>
+      <div class="kpi-value" id="patTotal">—</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">🛡️ Fonds d'urgence</div>
+      <div class="kpi-value" id="patUrgence">—</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">📈 Investissements</div>
+      <div class="kpi-value" id="patInv">—</div>
+    </div>
+    <div class="kpi-card" style="border-left-color:#8b5cf6;">
+      <div class="kpi-label">🎯 Piliers 3A/3B</div>
+      <div class="kpi-value" style="color:#8b5cf6;" id="patPiliers">—</div>
+    </div>
+  </div>
+
+  <!-- TABS PATRIMOINE -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:10px;">
+    <button onclick="showPatrimoineTab('urgence')" id="tabUrgence" style="background:var(--primary);color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;">🛡️ Fonds d'urgence</button>
+    <button onclick="showPatrimoineTab('epargne')" id="tabEpargne" style="background:transparent;color:var(--text);border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;">💰 Épargne 3A/3B</button>
+    <button onclick="showPatrimoineTab('investissements')" id="tabInvestissements" style="background:transparent;color:var(--text);border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;">📈 Investissements</button>
+  </div>
+
+  <!-- FONDS D'URGENCE -->
+  <div id="patrimoineUrgence">
+    <div class="card" style="margin-bottom:20px;">
+      <div class="section-title"><span>🛡️ Gérer fonds d'urgence</span></div>
+      <div class="gauge-container" id="gaugeUrgenceContainer"></div>
+      <div class="progress-section">
+        <div class="progress-label">
+          <span>Progression vers objectif</span>
+          <span id="urgencePct">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="urgenceFill" style="width:0%;"></div>
+        </div>
+        <div style="text-align:center;font-size:.85rem;color:var(--muted);margin-top:8px;">
+          <span id="urgenceInfo">—</span>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:20px;">
+        <div class="form-group">
+          <label>Solde actuel (CHF)</label>
+          <input type="number" id="urgenceSolde" step="0.01" onchange="updatePatrimoine()">
+        </div>
+        <div class="form-group">
+          <label>Objectif (CHF)</label>
+          <input type="number" id="urgenceObjectif" step="0.01" onchange="updatePatrimoine()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÉPARGNE 3A/3B -->
+  <div id="patrimoineEpargne" style="display:none;">
+    <div class="card">
+      <div class="section-title">
+        <span>💰 Piliers 3A et 3B</span>
+        <button class="add-btn" onclick="openEpargneModal()">+ Ajouter</button>
+      </div>
+      <div id="epargneList"></div>
+    </div>
+  </div>
+
+  <!-- INVESTISSEMENTS -->
+  <div id="patrimoineInvestissements" style="display:none;">
+    <div class="card">
+      <div class="section-title">
+        <span>📈 Investissements</span>
+        <button class="add-btn" onclick="openInvestissementModal()">+ Ajouter</button>
+      </div>
+      <div id="investissementsList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VACANCES ============ -->
+<div id="page-vacances" class="page">
+  <div class="card" style="margin-bottom:20px;">
+    <div class="section-title"><span>✈️ Créer un voyage</span></div>
+    <div class="grid-2" style="margin-bottom:12px;">
+      <div class="form-group">
+        <label>Destination</label>
+        <input type="text" id="vacDest" placeholder="Italie, Suisse, ...">
+      </div>
+      <div class="form-group">
+        <label>Budget total (CHF)</label>
+        <input type="number" id="vacBudget" step="0.01">
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom:12px;">
+      <div class="form-group">
+        <label>Date départ</label>
+        <input type="date" id="vacDebut">
+      </div>
+      <div class="form-group">
+        <label>Date retour</label>
+        <input type="date" id="vacFin">
+      </div>
+    </div>
+    <button class="add-btn" onclick="addVacation()" style="width:100%;padding:10px;">Créer voyage</button>
+  </div>
+  <div id="vacationsList"></div>
+</div>
+
+</main>
+
+<!-- MODAL IMPORT -->
+<div class="modal-overlay" id="modalImport">
+  <div class="modal">
+    <div class="modal-title">📥 Importer depuis Google Sheet</div>
+    <div class="form-group">
+      <label>ID du Google Sheet</label>
+      <input type="text" id="sheetId" placeholder="Collez l'ID ici">
+    </div>
+    <p style="font-size:.85rem;color:var(--muted);margin:10px 0;">
+      📌 Trouvez l'ID dans l'URL : docs.google.com/spreadsheets/d/<strong>ID</strong>/edit
+    </p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="document.getElementById('modalImport').classList.remove('open')">Annuler</button>
+      <button class="btn-primary" onclick="importFromSheet()">Importer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRINCIPAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Ajouter</div>
+    <input type="hidden" id="modalType">
+    <div class="form-group"><label>Description</label><input type="text" id="fDesc"></div>
+    <div class="form-group"><label>Montant (CHF)</label><input type="number" id="fVal" step="0.01"></div>
+    <div class="form-group"><label>Type</label><select id="fType"><option>Fixe</option><option>Variable</option></select></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ DATA & STORAGE ============
+const STORAGE_KEY = 'famille_tolaj_pro_v1';
+
+let data = {
+  revenus: [],
+  depenses: [],
+  budgets: {},
+  epargne: [],
+  investissements: [],
+  urgence: { solde: 0, objectif: 0 },
+  events: [],
+  vacations: [],
+};
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function loadData() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    data = JSON.parse(stored);
+  }
+}
+
+function fmt(n) {
+  if (!n || n === 0) return '—';
+  return new Intl.NumberFormat('fr-CH', {
+    style: 'currency',
+    currency: 'CHF',
+    maximumFractionDigits: 0
+  }).format(n);
+}
+
+function fmtDetail(n) {
+  if (!n) return '0 CHF';
+  return new Intl.NumberFormat('fr-CH', {
+    style: 'currency',
+    currency: 'CHF',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(n);
+}
+
+// ============ IMPORT GOOGLE SHEET ============
+function openImportModal() {
+  document.getElementById('modalImport').classList.add('open');
+}
+
+function importFromSheet() {
+  const sheetId = document.getElementById('sheetId').value.trim();
+  if (!sheetId) {
+    toast('❌ Veuillez entrer un ID');
+    return;
+  }
+
+  // Pour cette version, on va faire un import simple
+  // En vrai, il faudrait utiliser Google Sheets API
+  // Pour maintenant, on propose d'importer les données pré-chargées
+  
+  data = {
+    revenus: [
+      { id: 1, desc: 'Allocations familiales', val: 644, type: 'Fixe' },
+      { id: 2, desc: 'GFS Salaire (Hysen)', val: 5600, type: 'Variable' },
+      { id: 3, desc: 'Loyer Livron (Hysen)', val: 2420, type: 'Fixe' },
+      { id: 4, desc: 'Hospice Salaire (Egzona)', val: 4202.10, type: 'Fixe' },
+    ],
+    depenses: [
+      { id: 1, desc: 'Loyer Livron', val: 1760, type: 'Fixe', cat: 'Logement' },
+      { id: 2, desc: 'Parking Livron', val: 80, type: 'Fixe', cat: 'Logement' },
+      { id: 3, desc: 'Loyer Rosset', val: 2380, type: 'Fixe', cat: 'Logement' },
+      { id: 4, desc: 'Assurance Helsana', val: 1190.55, type: 'Fixe', cat: 'Assurances' },
+      { id: 5, desc: 'Assurance GM', val: 110, type: 'Fixe', cat: 'Assurances' },
+      { id: 6, desc: 'Assurance Assura', val: 20, type: 'Fixe', cat: 'Assurances' },
+      { id: 7, desc: 'Pilier 3A Bâloise', val: 150, type: 'Fixe', cat: 'Épargne' },
+      { id: 8, desc: 'Pilier 3B Generali', val: 200, type: 'Fixe', cat: 'Épargne' },
+      { id: 9, desc: 'Pilier 3B RG', val: 500, type: 'Fixe', cat: 'Épargne' },
+      { id: 10, desc: 'Pilier 3A Pax', val: 600, type: 'Fixe', cat: 'Épargne' },
+      { id: 11, desc: 'Garderie Anisa', val: 244.35, type: 'Fixe', cat: 'Autre' },
+      { id: 12, desc: 'Courses Migros/Coop', val: 600, type: 'Variable', cat: 'Alimentation' },
+      { id: 13, desc: 'Swisscom', val: 379.55, type: 'Variable', cat: 'Autre' },
+      { id: 14, desc: 'Santé/Dentiste', val: 380.81, type: 'Fixe', cat: 'Santé' },
+      { id: 15, desc: 'InteractiveBrookers', val: 1000, type: 'Fixe', cat: 'Investissements' },
+      { id: 16, desc: 'Shopping/Divers', val: 300, type: 'Variable', cat: 'Autre' },
+    ],
+    budgets: {
+      'Logement': 4220,
+      'Assurances': 1320,
+      'Épargne': 1450,
+      'Alimentation': 600,
+      'Santé': 380,
+      'Autre': 1700,
+    },
+    epargne: [
+      { id: 1, membre: 'Hysen', pilier: '3A', etab: 'Bâloise', montant: 150, annuel: 1800 },
+      { id: 2, membre: 'Hysen', pilier: '3B', etab: 'RG', montant: 500, annuel: 6000 },
+      { id: 3, membre: 'Egzona', pilier: '3A', etab: 'Pax', montant: 600, annuel: 7200 },
+      { id: 4, membre: 'Luna', pilier: '3B', etab: 'N/A', montant: 0, annuel: 0 },
+      { id: 5, membre: 'Anisa', pilier: '3B', etab: 'N/A', montant: 0, annuel: 0 },
+    ],
+    investissements: [
+      { id: 1, nom: 'InteractiveBrookers', type: 'Actions', val: 1000 },
+    ],
+    urgence: { solde: 15000, objectif: 35000 },
+    events: [],
+    vacations: [],
+  };
+
+  saveData();
+  document.getElementById('modalImport').classList.remove('open');
+  toast('✅ Données importées !');
+  refresh();
+}
+
+// ============ CALCULATIONS ============
+function calc() {
+  const totalRev = data.revenus.reduce((s, r) => s + (parseFloat(r.val) || 0), 0);
+  const totalDep = data.depenses.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+  const liq = totalRev - totalDep;
+  const totalEp = data.epargne.reduce((s, e) => s + (parseFloat(e.annuel) || 0), 0);
+  const totalInv = data.investissements.reduce((s, i) => s + (parseFloat(i.val) || 0), 0);
+  const totalPat = data.urgence.solde + totalInv + totalEp;
+
+  return { totalRev, totalDep, liq, totalEp, totalInv, totalPat };
+}
+
+// ============ REFRESH ============
+function refresh() {
+  const { totalRev, totalDep, liq, totalEp, totalInv, totalPat } = calc();
+
+  document.getElementById('kpi-rev').textContent = fmt(totalRev);
+  document.getElementById('kpi-dep').textContent = fmt(totalDep);
+  document.getElementById('kpi-liq').textContent = fmt(liq);
+  document.getElementById('kpi-pat').textContent = fmt(totalPat);
+
+  renderRevenues();
+  renderDepenses();
+  renderBudgets();
+  renderAgenda();
+  renderEnfants();
+  renderAnalyse(totalRev, totalDep, totalEp, totalInv);
+  renderPatrimoine(totalPat, totalInv, totalEp);
+  renderVacations();
+  renderCharts(totalRev, totalDep);
+  checkReminders();
+  saveData();
+}
+
+// ============ REVENUES ============
+function renderRevenues() {
+  const tot = data.revenus.reduce((s, r) => s + (parseFloat(r.val) || 0), 0);
+  document.getElementById('tbRev').innerHTML = data.revenus.map((r, i) => `
+    <tr>
+      <td>${r.desc || ''}</td>
+      <td><input class="edit-input" type="number" value="${r.val || ''}" onchange="data.revenus[${i}].val=parseFloat(this.value)||0;refresh()" step="0.01" style="max-width:120px;"></td>
+      <td><span class="badge ${r.type === 'Fixe' ? 'fixe' : 'variable'}">${r.type}</span></td>
+      <td><button class="del-btn" onclick="data.revenus.splice(${i},1);refresh()">🗑</button></td>
+    </tr>
+  `).join('');
+  document.getElementById('totRev').textContent = fmt(tot);
+
+  document.getElementById('tbRevDetail').innerHTML = data.revenus.map(r => {
+    const tot = data.revenus.reduce((s, x) => s + (parseFloat(x.val) || 0), 0);
+    const pct = tot > 0 ? ((parseFloat(r.val) || 0) / tot * 100).toFixed(0) : 0;
+    return `<tr><td>${r.desc || ''}</td><td>${fmtDetail(parseFloat(r.val) || 0)}</td><td><span class="badge ${r.type === 'Fixe' ? 'fixe' : 'variable'}">${r.type}</span></td><td>${pct}%</td></tr>`;
+  }).join('');
+}
+
+// ============ DEPENSES ============
+function renderDepenses() {
+  const tot = data.depenses.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+  document.getElementById('tbDep').innerHTML = data.depenses.map((d, i) => `
+    <tr>
+      <td>${d.desc || ''}</td>
+      <td><input class="edit-input" type="number" value="${d.val || ''}" onchange="data.depenses[${i}].val=parseFloat(this.value)||0;refresh()" step="0.01" style="max-width:120px;"></td>
+      <td><span class="badge ${d.type === 'Fixe' ? 'fixe' : 'variable'}">${d.type}</span></td>
+      <td><button class="del-btn" onclick="data.depenses.splice(${i},1);refresh()">🗑</button></td>
+    </tr>
+  `).join('');
+  document.getElementById('totDep').textContent = fmt(tot);
+}
+
+// ============ BUDGETS ============
+function renderBudgets() {
+  const html = Object.entries(data.budgets).map(([cat, budget]) => {
+    const real = data.depenses.filter(d => d.cat === cat).reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+    const ecart = real - budget;
+    const pctUse = budget > 0 ? (real / budget * 100).toFixed(0) : 0;
+    const status = real > budget ? 'dépassé' : 'ok';
+
+    return `
+      <div style="padding:12px;background:rgba(91,79,207,.05);border-radius:8px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div>
+            <div style="font-weight:700;color:var(--text);">${cat}</div>
+            <div style="font-size:.85rem;color:var(--muted);">Budget: ${fmt(budget)} | Réel: ${fmt(real)}</div>
+          </div>
+          <button class="del-btn" onclick="delete data.budgets['${cat}'];refresh()">🗑</button>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${Math.min(pctUse, 100)}%;background:${status === 'ok' ? 'var(--green)' : 'var(--red)'}"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:4px;">
+          <span>${pctUse}% utilisé</span>
+          <span style="color:${status === 'ok' ? 'var(--green)' : 'var(--red)'};">${status === 'ok' ? '✓ OK' : '⚠ Dépassé de ' + fmt(Math.abs(ecart))}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('budgetsList').innerHTML = html || '<div style="color:var(--muted);text-align:center;padding:20px;">Aucun budget</div>';
+}
+
+// ============ AGENDA ============
+function addEvent() {
+  const titre = document.getElementById('evTitre').value.trim();
+  const date = document.getElementById('evDate').value;
+  const type = document.getElementById('evType').value;
+  const desc = document.getElementById('evDesc').value.trim();
+
+  if (!titre || !date) {
+    toast('❌ Titre et date requis');
+    return;
+  }
+
+  data.events.push({ id: Date.now(), titre, date, type, desc, rappel: false });
+  
+  document.getElementById('evTitre').value = '';
+  document.getElementById('evDate').value = '';
+  document.getElementById('evDesc').value = '';
+
+  renderAgenda();
+  refresh();
+  toast('✅ Événement ajouté');
+}
+
+function renderAgenda() {
+  const sorted = [...data.events].sort((a, b) => new Date(a.date) - new Date(b.date));
+  document.getElementById('agendaList').innerHTML = sorted.map((e, i) => `
+    <div class="event-item">
+      <div style="display:flex;justify-content:space-between;align-items:start;">
+        <div>
+          <div class="event-date">${new Date(e.date).toLocaleDateString('fr-CH')}</div>
+          <div class="event-title">${e.titre}</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:4px;">📌 ${e.type}</div>
+          ${e.desc ? `<div class="event-desc" style="margin-top:6px;">${e.desc}</div>` : ''}
+        </div>
+        <button class="del-btn" onclick="data.events.splice(${i},1);refresh()">🗑</button>
+      </div>
+    </div>
+  `).join('') || '<div style="color:var(--muted);text-align:center;padding:20px;">Aucun événement</div>';
+}
+
+// ============ ENFANTS ============
+function renderEnfants() {
+  const enfants = [
+    { nom: 'Luna', emoji: '👧', ep3b: 0, rdv: [] },
+    { nom: 'Anisa', emoji: '👶', ep3b: 0, rdv: [] },
+  ];
+
+  enfants.forEach(e => {
+    e.rdv = data.events.filter(ev => ev.type === 'RDV médical' && ev.titre.includes(e.nom));
+    const epMemb = data.epargne.filter(ep => ep.membre === e.nom);
+    e.ep3b = epMemb.filter(ep => ep.pilier === '3B').reduce((s, ep) => s + (parseFloat(ep.annuel) || 0), 0);
+  });
+
+  document.getElementById('enfantsCards').innerHTML = enfants.map(e => `
+    <div class="card">
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-size:2.5rem;margin-bottom:8px;">${e.emoji}</div>
+        <div style="font-size:1.2rem;font-weight:700;color:var(--text);">${e.nom}</div>
+      </div>
+      <div style="background:rgba(91,79,207,.05);padding:12px;border-radius:8px;margin-bottom:12px;">
+        <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px;">💰 Épargne 3B</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--primary);">${fmt(e.ep3b)}</div>
+      </div>
+      <div style="font-size:.9rem;font-weight:700;margin-bottom:8px;">🏥 RDV médicaux</div>
+      <div>${e.rdv.length === 0 ? '<div style="color:var(--muted);">Aucun RDV</div>' : e.rdv.map(r => `<div style="font-size:.85rem;color:var(--text);margin-bottom:4px;">📅 ${r.titre} (${new Date(r.date).toLocaleDateString('fr-CH')})</div>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+// ============ ANALYSE ============
+function renderAnalyse(totalRev, totalDep, totalEp, totalInv) {
+  const taux = totalRev > 0 ? ((totalDep / totalRev) * 100).toFixed(1) : 0;
+  const objectif = totalDep * 0.2; // 20% d'épargne objectif
+  const patrimoine5 = (totalDep * 12 * 0.2) * 5 + totalInv; // Épargne + investissement
+
+  document.getElementById('anTaux').textContent = taux + '%';
+  document.getElementById('anBudget').textContent = '5%';
+  document.getElementById('anObjectif').textContent = fmt(objectif);
+  document.getElementById('anPatrimoine5').textContent = fmt(patrimoine5);
+
+  // Insights
+  let insightsHtml = '';
+
+  const taux2 = totalRev > 0 ? ((totalDep / totalRev) * 100).toFixed(0) : 0;
+  if (taux2 > 80) {
+    insightsHtml += `
+      <div class="insight-box insight-warning">
+        <div class="insight-title">⚠️ Dépenses élevées</div>
+        <div class="insight-text">Vos dépenses représentent ${taux2}% de vos revenus. Cible recommandée: 70%</div>
+      </div>
+    `;
+  } else {
+    insightsHtml += `
+      <div class="insight-box insight-success">
+        <div class="insight-title">✅ Dépenses maîtrisées</div>
+        <div class="insight-text">Vos dépenses (${taux2}%) sont en dessous de l'objectif. Bien géré!</div>
+      </div>
+    `;
+  }
+
+  const budgetsExcedees = Object.entries(data.budgets).filter(([cat, budget]) => {
+    const real = data.depenses.filter(d => d.cat === cat).reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+    return real > budget;
+  });
+
+  if (budgetsExcedees.length > 0) {
+    insightsHtml += `
+      <div class="insight-box insight-warning">
+        <div class="insight-title">⚠️ Budgets dépassés</div>
+        <div class="insight-text">${budgetsExcedees.length} catégorie(s) dépassée(s): ${budgetsExcedees.map(([cat]) => cat).join(', ')}</div>
+      </div>
+    `;
+  }
+
+  insightsHtml += `
+    <div class="insight-box">
+      <div class="insight-title">🔮 Projection 5 ans</div>
+      <div class="insight-text">Si vous maintenez cette épargne, votre patrimoine devrait atteindre ${fmt(patrimoine5)} dans 5 ans</div>
+    </div>
+  `;
+
+  document.getElementById('insights').innerHTML = insightsHtml;
+}
+
+// ============ PATRIMOINE ============
+function renderPatrimoine(totalPat, totalInv, totalEp) {
+  document.getElementById('patTotal').textContent = fmt(totalPat);
+  document.getElementById('patUrgence').textContent = fmt(data.urgence.solde);
+  document.getElementById('patInv').textContent = fmt(totalInv);
+  document.getElementById('patPiliers').textContent = fmt(totalEp);
+
+  renderUrgence();
+  renderEpargneList();
+  renderInvestissementsList();
+}
+
+function renderUrgence() {
+  const solde = parseFloat(data.urgence.solde) || 0;
+  const objectif = parseFloat(data.urgence.objectif) || 35000;
+  const pct = objectif > 0 ? (solde / objectif) * 100 : 0;
+
+  document.getElementById('gaugeUrgenceContainer').innerHTML = `
+    <svg class="gauge-svg" viewBox="0 0 250 150">
+      <defs>
+        <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />
+          <stop offset="50%" style="stop-color:#f59e0b;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#22c55e;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <!-- Background arc -->
+      <path d="M 50 125 A 75 75 0 0 1 200 125" stroke="#e5e7eb" stroke-width="12" fill="none" stroke-linecap="round"/>
+      <!-- Progress arc -->
+      <path d="M 50 125 A 75 75 0 0 1 ${50 + 150 * (pct / 100)} ${125 + 75 * (1 - Math.cos(Math.PI * (pct / 100)))}" stroke="url(#gaugeGrad)" stroke-width="12" fill="none" stroke-linecap="round"/>
+      <!-- Center text -->
+      <text x="125" y="140" text-anchor="middle" font-size="20" font-weight="700" fill="#5b4fcf">${Math.min(pct, 100).toFixed(0)}%</text>
+    </svg>
+  `;
+
+  document.getElementById('urgencePct').textContent = Math.min(pct, 100).toFixed(0) + '%';
+  document.getElementById('urgenceInfo').textContent = `${fmt(solde)} / ${fmt(objectif)} - ${Math.max(0, objectif - solde) > 0 ? fmt(Math.max(0, objectif - solde)) + ' à épargner' : 'Objectif atteint! ✅'}`;
+}
+
+function renderEpargneList() {
+  const grouped = {};
+  data.epargne.forEach(e => {
+    if (!grouped[e.membre]) grouped[e.membre] = [];
+    grouped[e.membre].push(e);
+  });
+
+  document.getElementById('epargneList').innerHTML = Object.entries(grouped).map(([membre, epargnes]) => {
+    const total3a = epargnes.filter(e => e.pilier === '3A').reduce((s, e) => s + (parseFloat(e.annuel) || 0), 0);
+    const total3b = epargnes.filter(e => e.pilier === '3B').reduce((s, e) => s + (parseFloat(e.annuel) || 0), 0);
+
+    return `
+      <div style="margin-bottom:16px;padding:12px;background:rgba(91,79,207,.05);border-radius:8px;">
+        <div style="font-weight:700;margin-bottom:8px;">${membre}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:.9rem;">
+          <div>
+            <div style="color:var(--muted);">Pilier 3A</div>
+            <div style="font-weight:700;color:#3b82f6;">${fmt(total3a)}</div>
+          </div>
+          <div>
+            <div style="color:var(--muted);">Pilier 3B</div>
+            <div style="font-weight:700;color:#8b5cf6;">${fmt(total3b)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('') || '<div style="color:var(--muted);">Aucune épargne</div>';
+}
+
+function renderInvestissementsList() {
+  document.getElementById('investissementsList').innerHTML = data.investissements.map((i, idx) => `
+    <div style="padding:12px;background:rgba(91,79,207,.05);border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-weight:700;color:var(--text);">${i.nom}</div>
+        <div style="font-size:.85rem;color:var(--muted);">${i.type}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="edit-input" style="max-width:100px;font-size:.85rem;" type="number" value="${i.val || ''}" onchange="data.investissements[${idx}].val=parseFloat(this.value)||0;refresh()" step="0.01">
+        <button class="del-btn" onclick="data.investissements.splice(${idx},1);refresh()">🗑</button>
+      </div>
+    </div>
+  `).join('') || '<div style="color:var(--muted);">Aucun investissement</div>';
+}
+
+function showPatrimoineTab(tab) {
+  document.getElementById('patrimoineUrgence').style.display = tab === 'urgence' ? 'block' : 'none';
+  document.getElementById('patrimoineEpargne').style.display = tab === 'epargne' ? 'block' : 'none';
+  document.getElementById('patrimoineInvestissements').style.display = tab === 'investissements' ? 'block' : 'none';
+
+  document.getElementById('tabUrgence').style.background = tab === 'urgence' ? 'var(--primary)' : 'transparent';
+  document.getElementById('tabUrgence').style.color = tab === 'urgence' ? 'white' : 'var(--text)';
+
+  document.getElementById('tabEpargne').style.background = tab === 'epargne' ? 'var(--primary)' : 'transparent';
+  document.getElementById('tabEpargne').style.color = tab === 'epargne' ? 'white' : 'var(--text)';
+
+  document.getElementById('tabInvestissements').style.background = tab === 'investissements' ? 'var(--primary)' : 'transparent';
+  document.getElementById('tabInvestissements').style.color = tab === 'investissements' ? 'white' : 'var(--text)';
+}
+
+// ============ VACANCES ============
+function addVacation() {
+  const dest = document.getElementById('vacDest').value.trim();
+  const budget = parseFloat(document.getElementById('vacBudget').value) || 0;
+  const debut = document.getElementById('vacDebut').value;
+  const fin = document.getElementById('vacFin').value;
+
+  if (!dest || !budget || !debut || !fin) {
+    toast('❌ Remplissez tous les champs');
+    return;
+  }
+
+  data.vacations.push({
+    id: Date.now(),
+    dest,
+    budget,
+    debut,
+    fin,
+    depenses: [],
+    epargne: [],
+  });
+
+  document.getElementById('vacDest').value = '';
+  document.getElementById('vacBudget').value = '';
+  document.getElementById('vacDebut').value = '';
+  document.getElementById('vacFin').value = '';
+
+  renderVacations();
+  refresh();
+  toast('✅ Voyage créé');
+}
+
+function renderVacations() {
+  document.getElementById('vacationsList').innerHTML = data.vacations.map((v, vi) => {
+    const totalDep = v.depenses.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+    const totalEp = v.epargne.reduce((s, e) => s + (parseFloat(e.val) || 0), 0);
+    const restant = v.budget - totalDep;
+
+    return `
+      <div class="vacation-card">
+        <div style="display:flex;justify-content:space-between;align-items:start;">
+          <div style="flex:1;">
+            <div class="vacation-title">${v.dest}</div>
+            <div class="vacation-stat"><span class="vacation-stat-label">Dates:</span><span class="vacation-stat-value">${v.debut} → ${v.fin}</span></div>
+            <div class="vacation-stat"><span class="vacation-stat-label">Budget:</span><span class="vacation-stat-value">${fmt(v.budget)}</span></div>
+            <div class="vacation-stat"><span class="vacation-stat-label">Dépensé:</span><span class="vacation-stat-value" style="color:${totalDep > v.budget ? 'var(--red)' : 'var(--green)'};">${fmt(totalDep)}</span></div>
+            <div class="vacation-stat"><span class="vacation-stat-label">Restant:</span><span class="vacation-stat-value" style="color:${restant < 0 ? 'var(--red)' : 'var(--blue)'};">${fmt(restant)}</span></div>
+            <div class="vacation-stat"><span class="vacation-stat-label">Épargné:</span><span class="vacation-stat-value" style="color:var(--primary);">${fmt(totalEp)}</span></div>
+          </div>
+          <button class="del-btn" style="font-size:1.3rem;" onclick="data.vacations.splice(${vi},1);refresh()">🗑</button>
+        </div>
+
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <div style="font-weight:700;margin-bottom:8px;">💸 Ajouter dépense</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <input type="text" placeholder="Description" id="vdesc-${vi}" style="padding:8px;border:1px solid var(--border);border-radius:6px;">
+            <input type="number" placeholder="Montant" id="vval-${vi}" step="0.01" style="padding:8px;border:1px solid var(--border);border-radius:6px;">
+            <button class="add-btn" onclick="addVacationDep(${vi})" style="justify-content:center;padding:8px;">Ajouter</button>
+          </div>
+          <div style="margin-top:8px;">
+            ${v.depenses.map((d, di) => `<div style="padding:6px;background:rgba(91,79,207,.05);border-radius:4px;display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:4px;"><span>${d.desc}: ${fmt(d.val)}</span><button class="del-btn" onclick="data.vacations[${vi}].depenses.splice(${di},1);refresh()" style="padding:0;">🗑</button></div>`).join('')}
+          </div>
+        </div>
+
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <div style="font-weight:700;margin-bottom:8px;">💰 Tracker épargne</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <input type="text" placeholder="Mois/Semaine" id="eperdesc-${vi}" style="padding:8px;border:1px solid var(--border);border-radius:6px;">
+            <input type="number" placeholder="Montant" id="eperval-${vi}" step="0.01" style="padding:8px;border:1px solid var(--border);border-radius:6px;">
+            <button class="add-btn" onclick="addVacationEpargne(${vi})" style="justify-content:center;padding:8px;">Ajouter</button>
+          </div>
+          <div style="margin-top:8px;">
+            ${v.epargne.map((e, ei) => `<div style="padding:6px;background:rgba(34,197,94,.05);border-radius:4px;display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:4px;"><span>${e.desc}: ${fmt(e.val)}</span><button class="del-btn" onclick="data.vacations[${vi}].epargne.splice(${ei},1);refresh()" style="padding:0;">🗑</button></div>`).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('') || '<div style="color:var(--muted);text-align:center;padding:20px;">Aucun voyage</div>';
+}
+
+function addVacationDep(vi) {
+  const desc = document.getElementById(`vdesc-${vi}`).value.trim();
+  const val = parseFloat(document.getElementById(`vval-${vi}`).value) || 0;
+  if (!desc || val <= 0) return;
+
+  data.vacations[vi].depenses.push({ id: Date.now(), desc, val });
+  document.getElementById(`vdesc-${vi}`).value = '';
+  document.getElementById(`vval-${vi}`).value = '';
+  renderVacations();
+  refresh();
+  toast('✅ Dépense ajoutée');
+}
+
+function addVacationEpargne(vi) {
+  const desc = document.getElementById(`eperdesc-${vi}`).value.trim();
+  const val = parseFloat(document.getElementById(`eperval-${vi}`).value) || 0;
+  if (!desc || val <= 0) return;
+
+  data.vacations[vi].epargne.push({ id: Date.now(), desc, val });
+  document.getElementById(`eperdesc-${vi}`).value = '';
+  document.getElementById(`eperval-${vi}`).value = '';
+  renderVacations();
+  refresh();
+  toast('✅ Épargne notée');
+}
+
+// ============ MODALS ============
+function openModal(type) {
+  document.getElementById('modalType').value = type;
+  document.getElementById('modalTitle').textContent = type === 'rev' ? '➕ Ajouter revenu' : '➕ Ajouter dépense';
+  document.getElementById('fDesc').value = '';
+  document.getElementById('fVal').value = '';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function saveModal() {
+  const type = document.getElementById('modalType').value;
+  const desc = document.getElementById('fDesc').value.trim();
+  const val = parseFloat(document.getElementById('fVal').value) || 0;
+  const ftype = document.getElementById('fType').value;
+
+  if (!desc || val <= 0) {
+    toast('❌ Remplissez tous les champs');
+    return;
+  }
+
+  if (type === 'rev') {
+    data.revenus.push({ id: Date.now(), desc, val, type: ftype });
+  } else {
+    data.depenses.push({ id: Date.now(), desc, val, type: ftype, cat: 'Autre' });
+  }
+
+  closeModal();
+  refresh();
+  toast('✅ Ajouté');
+}
+
+function openBudgetModal() {
+  const cat = prompt('Catégorie de budget:');
+  const budget = prompt('Montant budget (CHF):');
+
+  if (!cat || !budget) return;
+
+  data.budgets[cat] = parseFloat(budget) || 0;
+  refresh();
+  toast('✅ Budget ajouté');
+}
+
+function openEpargneModal() {
+  // Simple dialog pour ajouter épargne
+  const membre = prompt('Membre (Hysen/Egzona/Luna/Anisa):');
+  const pilier = prompt('Pilier (3A/3B):');
+  const annuel = prompt('Montant annuel (CHF):');
+
+  if (!membre || !pilier || !annuel) return;
+
+  data.epargne.push({
+    id: Date.now(),
+    membre,
+    pilier,
+    annuel: parseFloat(annuel) || 0,
+    montant: 0,
+    etab: ''
+  });
+
+  refresh();
+  toast('✅ Épargne ajoutée');
+}
+
+function openInvestissementModal() {
+  const nom = prompt('Nom de l\'investissement:');
+  const type = prompt('Type (Actions/ETF/Crypto/Obligations/Autre):');
+  const val = prompt('Valeur (CHF):');
+
+  if (!nom || !type || !val) return;
+
+  data.investissements.push({
+    id: Date.now(),
+    nom,
+    type,
+    val: parseFloat(val) || 0
+  });
+
+  refresh();
+  toast('✅ Investissement ajouté');
+}
+
+function updatePatrimoine() {
+  data.urgence.solde = parseFloat(document.getElementById('urgenceSolde').value) || 0;
+  data.urgence.objectif = parseFloat(document.getElementById('urgenceObjectif').value) || 0;
+  refresh();
+  toast('✅ Fonds d\'urgence mis à jour');
+}
+
+// ============ CHARTS ============
+let charts = {};
+
+function renderCharts(totalRev, totalDep) {
+  const revLabels = data.revenus.map(r => r.desc.substring(0, 20)).slice(0, 8);
+  const revVals = data.revenus.map(r => parseFloat(r.val) || 0).slice(0, 8);
+
+  const depLabels = [...new Set(data.depenses.map(d => d.cat || 'N/A'))].slice(0, 8);
+  const depVals = depLabels.map(cat => data.depenses.filter(d => (d.cat || 'N/A') === cat).reduce((s, d) => s + (parseFloat(d.val) || 0), 0));
+
+  const COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#22c55e', '#ef4444', '#06b6d4', '#ec4899', '#10b981'];
+
+  // Revenue Donut
+  if (charts.rev) charts.rev.destroy();
+  charts.rev = new Chart(document.getElementById('chartRev'), {
+    type: 'doughnut',
+    data: {
+      labels: revLabels,
+      datasets: [{ data: revVals, backgroundColor: COLORS, borderWidth: 2, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--card').trim() }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } }, cutout: '55%', maintainAspectRatio: false }
+  });
+
+  // Expense Donut
+  if (charts.dep) charts.dep.destroy();
+  charts.dep = new Chart(document.getElementById('chartDep'), {
+    type: 'doughnut',
+    data: {
+      labels: depLabels,
+      datasets: [{ data: depVals, backgroundColor: COLORS, borderWidth: 2, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--card').trim() }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } }, cutout: '55%', maintainAspectRatio: false }
+  });
+
+  // Trend
+  if (charts.trend) charts.trend.destroy();
+  const months = ['Janvier', 'Février', 'Mars'];
+  charts.trend = new Chart(document.getElementById('chartTrend'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        { label: 'Revenus', data: [totalRev, totalRev, totalRev], borderColor: '#22c55e', borderWidth: 3, tension: 0.4, fill: false },
+        { label: 'Dépenses', data: [totalDep, totalDep, totalDep], borderColor: '#ef4444', borderWidth: 3, tension: 0.4, fill: false }
+      ]
+    },
+    options: { plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } }, maintainAspectRatio: false }
+  });
+
+  // Revenue Bar
+  if (charts.revBar) charts.revBar.destroy();
+  charts.revBar = new Chart(document.getElementById('chartRevBar'), {
+    type: 'bar',
+    data: {
+      labels: revLabels,
+      datasets: [{ label: 'CHF', data: revVals, backgroundColor: COLORS, borderRadius: 6 }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } }, maintainAspectRatio: false }
+  });
+
+  // Budget vs Real
+  if (charts.budgetVsReal) charts.budgetVsReal.destroy();
+  const budgetLabels = Object.keys(data.budgets).slice(0, 6);
+  const budgetVals = budgetLabels.map(cat => data.budgets[cat]);
+  const realVals = budgetLabels.map(cat => data.depenses.filter(d => d.cat === cat).reduce((s, d) => s + (parseFloat(d.val) || 0), 0));
+
+  charts.budgetVsReal = new Chart(document.getElementById('chartBudgetVsReal'), {
+    type: 'bar',
+    data: {
+      labels: budgetLabels,
+      datasets: [
+        { label: 'Budget', data: budgetVals, backgroundColor: '#cbd5e1', borderRadius: 6 },
+        { label: 'Réel', data: realVals, backgroundColor: '#5b4fcf', borderRadius: 6 }
+      ]
+    },
+    options: { plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } }, maintainAspectRatio: false }
+  });
+
+  // Patrimoine
+  if (charts.patrimoine) charts.patrimoine.destroy();
+  const { totalEp, totalInv } = calc();
+  charts.patrimoine = new Chart(document.getElementById('chartPatrimoine'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Fonds d\'urgence', 'Investissements', 'Épargne 3A/3B'],
+      datasets: [{
+        data: [data.urgence.solde, totalInv, totalEp],
+        backgroundColor: ['#22c55e', '#8b5cf6', '#3b82f6'],
+        borderWidth: 2,
+        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--card').trim()
+      }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } }, cutout: '55%', maintainAspectRatio: false }
+  });
+}
+
+// ============ REMINDERS ============
+function checkReminders() {
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+  const reminders = [
+    ...data.events.filter(e => e.date === tomorrow),
+  ];
+
+  const banner = document.getElementById('reminderBanner');
+  if (reminders.length > 0) {
+    const text = reminders.map(r => `${r.titre} demain à ${r.date}`).join(' • ');
+    document.getElementById('reminderText').textContent = text;
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+// ============ DARK MODE ============
+function toggleDarkMode() {
+  document.body.classList.toggle('dark-mode');
+  localStorage.setItem('dark-mode', document.body.classList.contains('dark-mode'));
+}
+
+// ============ EXPORT PDF ============
+function exportPDF() {
+  const element = document.querySelector('main');
+  const opt = {
+    margin: 10,
+    filename: `Rapport_Famille_Tolaj_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+  };
+  html2pdf().set(opt).from(element).save();
+  toast('✅ PDF généré');
+}
+
+// ============ UTILS ============
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ============ INIT ============
+window.addEventListener('DOMContentLoaded', () => {
+  loadData();
+  if (localStorage.getItem('dark-mode') === 'true') {
+    document.body.classList.add('dark-mode');
+  }
+  refresh();
+});
+</script>
+</body>
+</html>
