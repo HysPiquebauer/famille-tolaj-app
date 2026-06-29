@@ -571,6 +571,11 @@
     nav { overflow-x: scroll; }
   }
 
+  @media (max-width: 768px) {
+    #annexeDepsList { display: none !important; }
+    [id*="annexe"] { display: none !important; }
+  }
+
   @media (max-width: 600px) {
     header { flex-direction: column; gap: 10px; height: auto; padding: 12px; }
     .header-actions { width: 100%; }
@@ -977,13 +982,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-
-<style>
-  @media (max-width: 768px) {
-    #annexeDepsList { display: none !important; }
-    [id*="annexe"] { display: none !important; }
-  }
-</style>
 
 <script>
 // ============ DATA & STORAGE ============
