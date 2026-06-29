@@ -698,6 +698,14 @@
     </div>
     <div id="budgetsList"></div>
   </div>
+
+  <div class="card" style="margin-top:20px;">
+    <div class="section-title">
+      <span>📌 Dépenses annexes mensuelles</span>
+      <button class="add-btn" onclick="openAnnexeModal()">+ Ajouter</button>
+    </div>
+    <div id="annexeDepsList"></div>
+  </div>
 </div>
 
 <!-- ============ REVENUS ============ -->
@@ -955,7 +963,27 @@
   </div>
 </div>
 
+<!-- MODALE DÉPENSES ANNEXES -->
+<div class="modal-overlay" id="modalAnnexe" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">📌 Ajouter une dépense annexe</div>
+    <div class="form-group"><label>Description</label><input type="text" id="annexeDesc" placeholder="Ex: Assurance complémentaire"></div>
+    <div class="form-group"><label>Montant (CHF)</label><input type="number" id="annexeVal" step="0.01"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAnnexeModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveAnnexeModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
+
+<style>
+  @media (max-width: 768px) {
+    #annexeDepsList { display: none !important; }
+    [id*="annexe"] { display: none !important; }
+  }
+</style>
 
 <script>
 // ============ DATA & STORAGE ============
@@ -970,6 +998,7 @@ let data = {
   urgence: { solde: 0, objectif: 0 },
   events: [],
   vacations: [],
+  annexeDep: [],
 };
 
 function saveData() {
@@ -1096,6 +1125,7 @@ function refresh() {
   renderRevenues();
   renderDepenses();
   renderBudgets();
+  renderAnnexe();
   renderAgenda();
   renderEnfants();
   renderAnalyse(totalRev, totalDep, totalEp, totalInv);
@@ -1169,6 +1199,68 @@ function renderBudgets() {
   }).join('');
 
   document.getElementById('budgetsList').innerHTML = html || '<div style="color:var(--muted);text-align:center;padding:20px;">Aucun budget</div>';
+}
+
+// ============ DÉPENSES ANNEXES MENSUELLES ============
+function renderAnnexe() {
+  const total = data.annexeDep.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+  
+  const html = data.annexeDep.map(dep => `
+    <tr>
+      <td>${dep.desc}</td>
+      <td style="font-weight:700;color:var(--text);">${fmtDetail(parseFloat(dep.val) || 0)}</td>
+      <td><button class="del-btn" onclick="deleteAnnexe(${dep.id})">🗑</button></td>
+    </tr>
+  `).join('');
+
+  const tableHtml = html ? `
+    <table style="width:100;">
+      <thead><tr><th>Description</th><th>Montant</th><th></th></tr></thead>
+      <tbody>${html}</tbody>
+    </table>
+    <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border);display:flex;justify-content:space-between;font-weight:800;">
+      <span>Total dépenses annexes</span>
+      <span style="color:var(--red);">${fmt(total)}</span>
+    </div>
+  ` : '<div style="color:var(--muted);text-align:center;padding:20px;">Aucune dépense annexe</div>';
+
+  document.getElementById('annexeDepsList').innerHTML = tableHtml;
+}
+
+function openAnnexeModal() {
+  document.getElementById('annexeDesc').value = '';
+  document.getElementById('annexeVal').value = '';
+  document.getElementById('modalAnnexe').style.display = 'flex';
+}
+
+function closeAnnexeModal() {
+  document.getElementById('modalAnnexe').style.display = 'none';
+}
+
+function saveAnnexeModal() {
+  const desc = document.getElementById('annexeDesc').value.trim();
+  const val = parseFloat(document.getElementById('annexeVal').value) || 0;
+
+  if (!desc || val <= 0) {
+    toast('❌ Remplissez tous les champs');
+    return;
+  }
+
+  data.annexeDep.push({
+    id: Date.now(),
+    desc,
+    val
+  });
+
+  closeAnnexeModal();
+  refresh();
+  toast('✅ Dépense annexe ajoutée');
+}
+
+function deleteAnnexe(id) {
+  data.annexeDep = data.annexeDep.filter(d => d.id !== id);
+  refresh();
+  toast('✅ Dépense annexe supprimée');
 }
 
 // ============ AGENDA ============
