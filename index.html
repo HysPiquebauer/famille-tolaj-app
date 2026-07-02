@@ -1030,6 +1030,9 @@ function loadData() {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
     data = JSON.parse(stored);
+    // S'assurer que les nouvelles propriétés existent toujours
+    if (!data.annexeDep) data.annexeDep = [];
+    if (!data.assuranceRembourse) data.assuranceRembourse = [];
   }
 }
 
