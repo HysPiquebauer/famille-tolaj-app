@@ -600,7 +600,8 @@
   </div>
   <div class="header-actions">
     <button class="toggle-dark" onclick="toggleDarkMode()">🌙</button>
-    <button class="add-btn" onclick="openImportModal()" title="Importer depuis Google Sheet">📥 Importer</button>
+    <button class="add-btn" onclick="openLoadDataModal()" title="Charger vos données">💾 Mes données</button>
+    <button class="add-btn" onclick="loadExamples()" title="Charger données d'exemple">📥 Exemples</button>
   </div>
 </header>
 
@@ -946,7 +947,7 @@
 <!-- MODAL IMPORT -->
 <div class="modal-overlay" id="modalImport">
   <div class="modal">
-    <div class="modal-title">📥 Importer depuis Google Sheet</div>
+    <div class="modal-title">💾 Charger mes données</div>
     <div class="form-group">
       <label>ID du Google Sheet</label>
       <input type="text" id="sheetId" placeholder="Collez l'ID ici">
@@ -956,7 +957,7 @@
     </p>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="document.getElementById('modalImport').classList.remove('open')">Annuler</button>
-      <button class="btn-primary" onclick="importFromSheet()">Importer</button>
+      <button class="btn-primary" onclick="importFromSheet()">Charger</button>
     </div>
   </div>
 </div>
@@ -1052,6 +1053,75 @@ function fmtDetail(n) {
 }
 
 // ============ IMPORT GOOGLE SHEET ============
+function openLoadDataModal() {
+  document.getElementById('modalImport').classList.add('open');
+}
+
+function loadExamples() {
+  const confirm = window.confirm('⚠️ Cela va charger les données d\'exemple.\n\nVos données actuelles seront REMPLACÉES !\n\nContinuer ?');
+  if (!confirm) return;
+
+  data = {
+    revenus: [
+      { id: 1, desc: 'Allocations familiales', val: 644, type: 'Fixe' },
+      { id: 2, desc: 'GFS Salaire (Hysen)', val: 5600, type: 'Variable' },
+      { id: 3, desc: 'Loyer Livron (Hysen)', val: 2420, type: 'Fixe' },
+      { id: 4, desc: 'Hospice Salaire (Egzona)', val: 4202.10, type: 'Fixe' },
+    ],
+    depenses: [
+      { id: 1, desc: 'Loyer Livron', val: 1760, type: 'Fixe', cat: 'Logement' },
+      { id: 2, desc: 'Parking Livron', val: 80, type: 'Fixe', cat: 'Logement' },
+      { id: 3, desc: 'Loyer Rosset', val: 2380, type: 'Fixe', cat: 'Logement' },
+      { id: 4, desc: 'Assurance Helsana', val: 1190.55, type: 'Fixe', cat: 'Assurances' },
+      { id: 5, desc: 'Assurance GM', val: 110, type: 'Fixe', cat: 'Assurances' },
+      { id: 6, desc: 'Assurance Assura', val: 20, type: 'Fixe', cat: 'Assurances' },
+      { id: 7, desc: 'Pilier 3A Bâloise', val: 150, type: 'Fixe', cat: 'Épargne' },
+      { id: 8, desc: 'Pilier 3B Generali', val: 200, type: 'Fixe', cat: 'Épargne' },
+      { id: 9, desc: 'Pilier 3B RG', val: 500, type: 'Fixe', cat: 'Épargne' },
+      { id: 10, desc: 'Pilier 3A Pax', val: 600, type: 'Fixe', cat: 'Épargne' },
+      { id: 11, desc: 'Garderie Anisa', val: 244.35, type: 'Fixe', cat: 'Autre' },
+      { id: 12, desc: 'Courses Migros/Coop', val: 600, type: 'Variable', cat: 'Alimentation' },
+      { id: 13, desc: 'Swisscom', val: 379.55, type: 'Variable', cat: 'Autre' },
+      { id: 14, desc: 'Santé/Dentiste', val: 380.81, type: 'Fixe', cat: 'Santé' },
+      { id: 15, desc: 'InteractiveBrookers', val: 1000, type: 'Fixe', cat: 'Investissements' },
+      { id: 16, desc: 'Shopping/Divers', val: 300, type: 'Variable', cat: 'Autre' },
+    ],
+    budgets: {
+      'Logement': 4220,
+      'Assurances': 1320,
+      'Épargne': 1450,
+      'Alimentation': 600,
+      'Santé': 380,
+      'Autre': 1700,
+    },
+    epargne: [
+      { id: 1, membre: 'Hysen', pilier: '3A', etab: 'Bâloise', montant: 150, annuel: 1800 },
+      { id: 2, membre: 'Hysen', pilier: '3B', etab: 'RG', montant: 500, annuel: 6000 },
+      { id: 3, membre: 'Egzona', pilier: '3A', etab: 'Pax', montant: 600, annuel: 7200 },
+      { id: 4, membre: 'Luna', pilier: '3B', etab: 'N/A', montant: 0, annuel: 0 },
+      { id: 5, membre: 'Anisa', pilier: '3B', etab: 'N/A', montant: 0, annuel: 0 },
+    ],
+    investissements: [
+      { id: 1, nom: 'InteractiveBrookers', type: 'Actions', val: 1000 },
+    ],
+    urgence: { solde: 15000, objectif: 35000 },
+    events: [],
+    vacations: [],
+    annexeDep: [
+      { id: 1, desc: 'Assurance complémentaire', val: 85.50 },
+      { id: 2, desc: 'Frais scolaires Luna', val: 150 },
+    ],
+    assuranceRembourse: [
+      { id: 1, desc: 'Remboursement Helsana - consultation', val: 85 },
+      { id: 2, desc: 'Remboursement dentiste', val: 200 },
+    ],
+  };
+
+  saveData();
+  toast('✅ Données d\'exemple chargées !');
+  refresh();
+}
+
 function openImportModal() {
   document.getElementById('modalImport').classList.add('open');
 }
