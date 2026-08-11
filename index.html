@@ -765,6 +765,13 @@
     </div>
     <div class="grid-2" style="margin-bottom:12px;">
       <div class="form-group">
+        <label>Heure (optionnel)</label>
+        <input type="time" id="evHeure">
+      </div>
+      <div></div>
+    </div>
+    <div class="grid-2" style="margin-bottom:12px;">
+      <div class="form-group">
         <label>Type</label>
         <select id="evType">
           <option>Famille</option>
@@ -1506,6 +1513,7 @@ function deleteAssurance(id) {
 function addEvent() {
   const titre = document.getElementById('evTitre').value.trim();
   const date = document.getElementById('evDate').value;
+  const heure = document.getElementById('evHeure').value;
   const type = document.getElementById('evType').value;
   const desc = document.getElementById('evDesc').value.trim();
 
@@ -1514,11 +1522,12 @@ function addEvent() {
     return;
   }
 
-  const newEv = { id: Date.now(), titre, date, type, desc, rappel: false };
+  const newEv = { id: Date.now(), titre, date, heure, type, desc, rappel: false };
   data.events.push(newEv);
   
   document.getElementById('evTitre').value = '';
   document.getElementById('evDate').value = '';
+  document.getElementById('evHeure').value = '';
   document.getElementById('evDesc').value = '';
 
   renderAgenda();
@@ -1534,12 +1543,12 @@ function delEventById(id) {
 
 function renderAgenda() {
   const localEvents = data.events.map(e => ({ ...e, fromGoogle: false }));
-  const merged = [...localEvents, ...googleEventsCache].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const merged = [...localEvents, ...googleEventsCache].sort((a, b) => new Date(a.date + 'T' + (a.heure || '00:00')) - new Date(b.date + 'T' + (b.heure || '00:00')));
   document.getElementById('agendaList').innerHTML = merged.map(e => `
     <div class="event-item">
       <div style="display:flex;justify-content:space-between;align-items:start;">
         <div>
-          <div class="event-date">${e.date ? new Date(e.date).toLocaleDateString('fr-CH') : ''}</div>
+          <div class="event-date">${e.date ? new Date(e.date).toLocaleDateString('fr-CH') : ''}${e.heure ? ' à ' + e.heure : ''}</div>
           <div class="event-title">${e.titre}</div>
           <div style="font-size:.75rem;color:var(--muted);margin-top:4px;">${e.fromGoogle ? '📆 Google Agenda' : '📌 ' + e.type}</div>
           ${(!e.fromGoogle && e.desc) ? `<div class="event-desc" style="margin-top:6px;">${e.desc}</div>` : ''}
@@ -1617,12 +1626,28 @@ function updateGoogleStatus() {
 async function pushEventToGoogle(ev) {
   if (!gConnected || !gAccessToken) return;
   try {
-    const body = {
-      summary: ev.titre,
-      description: ev.desc || '',
-      start: { date: ev.date },
-      end: { date: ev.date },
-    };
+    let body;
+    if (ev.heure) {
+      const startDateTime = `${ev.date}T${ev.heure}:00`;
+      const [h, m] = ev.heure.split(':').map(Number);
+      const endDate = new Date(`${ev.date}T${ev.heure}:00`);
+      endDate.setHours(endDate.getHours() + 1);
+      const pad = n => String(n).padStart(2, '0');
+      const endDateTime = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}:00`;
+      body = {
+        summary: ev.titre,
+        description: ev.desc || '',
+        start: { dateTime: startDateTime, timeZone: 'Europe/Zurich' },
+        end: { dateTime: endDateTime, timeZone: 'Europe/Zurich' },
+      };
+    } else {
+      body = {
+        summary: ev.titre,
+        description: ev.desc || '',
+        start: { date: ev.date },
+        end: { date: ev.date },
+      };
+    }
     const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
       method: 'POST',
       headers: {
@@ -1655,11 +1680,15 @@ async function importGoogleEvents() {
     const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + gAccessToken } });
     if (res.ok) {
       const json = await res.json();
-      googleEventsCache = (json.items || []).map(it => ({
-        titre: it.summary || '(Sans titre)',
-        date: (it.start && (it.start.date || (it.start.dateTime || '').slice(0, 10))) || '',
-        fromGoogle: true,
-      }));
+      googleEventsCache = (json.items || []).map(it => {
+        const hasTime = it.start && it.start.dateTime;
+        return {
+          titre: it.summary || '(Sans titre)',
+          date: (it.start && (it.start.date || (it.start.dateTime || '').slice(0, 10))) || '',
+          heure: hasTime ? it.start.dateTime.slice(11, 16) : '',
+          fromGoogle: true,
+        };
+      });
       renderAgenda();
     } else if (res.status === 401) {
       gConnected = false;
