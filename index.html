@@ -1103,7 +1103,7 @@ function checkNewMonth() {
       totalDepPaye: totalDepPayeMois,
     });
 
-    data.revenus = [];
+    data.revenus = data.revenus.map(r => ({ ...r, val: 0 }));
     data.annexeDep = [];
     data.assuranceRembourse = [];
     data.depenses.forEach(d => { d.paye = false; });
