@@ -6,6 +6,7 @@
 <title>Famille Tolaj — Gestion Financière PRO</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -681,12 +682,16 @@
           <button class="add-btn" onclick="openModal('dep')">+ Ajouter</button>
         </div>
         <table>
-          <thead><tr><th>Catégorie</th><th>Montant</th><th>Type</th><th></th></tr></thead>
+          <thead><tr><th>Catégorie</th><th>Montant</th><th>Type</th><th>Payé</th><th></th></tr></thead>
           <tbody id="tbDep"></tbody>
         </table>
         <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border);display:flex;justify-content:space-between;font-weight:800;">
-          <span>Total</span>
+          <span>Total prévu</span>
           <span id="totDep" style="color:var(--red)">—</span>
+        </div>
+        <div style="margin-top:6px;display:flex;justify-content:space-between;font-size:.85rem;font-weight:700;">
+          <span>✅ Payé ce mois</span>
+          <span id="totDepPaye" style="color:var(--green)">—</span>
         </div>
       </div>
     </div>
@@ -734,6 +739,18 @@
 
 <!-- ============ AGENDA ============ -->
 <div id="page-agenda" class="page">
+  <div class="card" style="margin-bottom:20px;">
+    <div class="section-title">
+      <span>📆 Google Agenda</span>
+      <span id="googleStatus" style="font-size:.85rem;color:var(--muted);font-weight:600;">⚪ Non connecté</span>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+      <button id="btnGoogleConnect" class="add-btn" onclick="connectGoogleCalendar()">🔗 Connecter Google Agenda</button>
+      <button id="btnGoogleDisconnect" class="add-btn" onclick="disconnectGoogleCalendar()" style="display:none;background:var(--red);">🔌 Déconnecter</button>
+      <button class="add-btn" onclick="importGoogleEvents()" style="background:var(--muted);">🔄 Actualiser</button>
+    </div>
+    <div style="font-size:.8rem;color:var(--muted);margin-top:10px;">Une fois connecté, chaque événement ajouté ci-dessous est automatiquement créé dans votre Google Agenda, et vos rendez-vous Google s'affichent dans la liste ci-dessous.</div>
+  </div>
   <div class="card">
     <div class="section-title"><span>📅 Ajouter événement</span></div>
     <div class="grid-2" style="margin-bottom:12px;">
@@ -820,6 +837,11 @@
   <div class="card">
     <div class="card-title">💡 Analyses intelligentes</div>
     <div id="insights"></div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <div class="card-title">🗓️ Historique mensuel (revenus, dépenses annexes, remboursements)</div>
+    <div id="historiqueList"></div>
   </div>
 
   <div class="card" style="margin-top:20px;">
@@ -1015,6 +1037,8 @@ let data = {
   vacations: [],
   annexeDep: [],
   assuranceRembourse: [],
+  historique: [],
+  currentMonth: null,
 };
 
 function saveData() {
@@ -1028,6 +1052,58 @@ function loadData() {
     // S'assurer que les nouvelles propriétés existent toujours
     if (!data.annexeDep) data.annexeDep = [];
     if (!data.assuranceRembourse) data.assuranceRembourse = [];
+    if (!data.historique) data.historique = [];
+    if (!data.currentMonth) data.currentMonth = null;
+  }
+}
+
+// ============ REMISE À ZÉRO MENSUELLE ============
+function currentMonthKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function moisLabel(key) {
+  const [y, m] = key.split('-');
+  const noms = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+  return noms[parseInt(m, 10) - 1] + ' ' + y;
+}
+
+function checkNewMonth() {
+  const nowKey = currentMonthKey();
+
+  if (!data.currentMonth) {
+    data.currentMonth = nowKey;
+    saveData();
+    return;
+  }
+
+  if (data.currentMonth !== nowKey) {
+    const totalRevMois = data.revenus.reduce((s, r) => s + (parseFloat(r.val) || 0), 0);
+    const totalAnnexeMois = data.annexeDep.reduce((s, a) => s + (parseFloat(a.val) || 0), 0);
+    const totalRembourseMois = data.assuranceRembourse.reduce((s, a) => s + (parseFloat(a.val) || 0), 0);
+    const totalDepPayeMois = data.depenses.filter(d => d.paye).reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+
+    if (!data.historique) data.historique = [];
+    data.historique.push({
+      mois: data.currentMonth,
+      revenus: JSON.parse(JSON.stringify(data.revenus)),
+      annexeDep: JSON.parse(JSON.stringify(data.annexeDep)),
+      assuranceRembourse: JSON.parse(JSON.stringify(data.assuranceRembourse)),
+      totalRev: totalRevMois,
+      totalAnnexe: totalAnnexeMois,
+      totalRembourse: totalRembourseMois,
+      totalDepPaye: totalDepPayeMois,
+    });
+
+    data.revenus = [];
+    data.annexeDep = [];
+    data.assuranceRembourse = [];
+    data.depenses.forEach(d => { d.paye = false; });
+
+    data.currentMonth = nowKey;
+    saveData();
+    toast('📅 Nouveau mois : données archivées et remises à zéro');
   }
 }
 
@@ -1113,6 +1189,8 @@ function loadExamples() {
       { id: 1, desc: 'Remboursement Helsana - consultation', val: 85 },
       { id: 2, desc: 'Remboursement dentiste', val: 200 },
     ],
+    historique: [],
+    currentMonth: currentMonthKey(),
   };
 
   saveData();
@@ -1183,6 +1261,8 @@ function importFromSheet() {
     vacations: [],
     annexeDep: [],
     assuranceRembourse: [],
+    historique: [],
+    currentMonth: currentMonthKey(),
   };
 
   saveData();
@@ -1222,6 +1302,7 @@ function refresh() {
   renderAgenda();
   renderEnfants();
   renderAnalyse(totalRev, totalDep, totalEp, totalInv);
+  renderHistorique();
   renderPatrimoine(totalPat, totalInv, totalEp);
   renderVacations();
   renderCharts(totalRev, totalDep);
@@ -1252,15 +1333,18 @@ function renderRevenues() {
 // ============ DEPENSES ============
 function renderDepenses() {
   const tot = data.depenses.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+  const totPaye = data.depenses.filter(d => d.paye).reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
   document.getElementById('tbDep').innerHTML = data.depenses.map((d, i) => `
     <tr>
       <td>${d.desc || ''}</td>
       <td><input class="edit-input" type="number" value="${d.val || ''}" onchange="data.depenses[${i}].val=parseFloat(this.value)||0;refresh()" step="0.01" style="max-width:120px;"></td>
       <td><span class="badge ${d.type === 'Fixe' ? 'fixe' : 'variable'}">${d.type}</span></td>
+      <td style="text-align:center;"><input type="checkbox" ${d.paye ? 'checked' : ''} onchange="data.depenses[${i}].paye=this.checked;refresh()" style="width:18px;height:18px;cursor:pointer;"></td>
       <td><button class="del-btn" onclick="data.depenses.splice(${i},1);refresh()">🗑</button></td>
     </tr>
   `).join('');
   document.getElementById('totDep').textContent = fmt(tot);
+  document.getElementById('totDepPaye').textContent = fmt(totPaye);
 }
 
 // ============ BUDGETS ============
@@ -1430,7 +1514,8 @@ function addEvent() {
     return;
   }
 
-  data.events.push({ id: Date.now(), titre, date, type, desc, rappel: false });
+  const newEv = { id: Date.now(), titre, date, type, desc, rappel: false };
+  data.events.push(newEv);
   
   document.getElementById('evTitre').value = '';
   document.getElementById('evDate').value = '';
@@ -1439,23 +1524,172 @@ function addEvent() {
   renderAgenda();
   refresh();
   toast('✅ Événement ajouté');
+  pushEventToGoogle(newEv);
+}
+
+function delEventById(id) {
+  data.events = data.events.filter(e => e.id !== id);
+  refresh();
 }
 
 function renderAgenda() {
-  const sorted = [...data.events].sort((a, b) => new Date(a.date) - new Date(b.date));
-  document.getElementById('agendaList').innerHTML = sorted.map((e, i) => `
+  const localEvents = data.events.map(e => ({ ...e, fromGoogle: false }));
+  const merged = [...localEvents, ...googleEventsCache].sort((a, b) => new Date(a.date) - new Date(b.date));
+  document.getElementById('agendaList').innerHTML = merged.map(e => `
     <div class="event-item">
       <div style="display:flex;justify-content:space-between;align-items:start;">
         <div>
-          <div class="event-date">${new Date(e.date).toLocaleDateString('fr-CH')}</div>
+          <div class="event-date">${e.date ? new Date(e.date).toLocaleDateString('fr-CH') : ''}</div>
           <div class="event-title">${e.titre}</div>
-          <div style="font-size:.75rem;color:var(--muted);margin-top:4px;">📌 ${e.type}</div>
-          ${e.desc ? `<div class="event-desc" style="margin-top:6px;">${e.desc}</div>` : ''}
+          <div style="font-size:.75rem;color:var(--muted);margin-top:4px;">${e.fromGoogle ? '📆 Google Agenda' : '📌 ' + e.type}</div>
+          ${(!e.fromGoogle && e.desc) ? `<div class="event-desc" style="margin-top:6px;">${e.desc}</div>` : ''}
         </div>
-        <button class="del-btn" onclick="data.events.splice(${i},1);refresh()">🗑</button>
+        ${e.fromGoogle ? '' : `<button class="del-btn" onclick="delEventById(${e.id})">🗑</button>`}
       </div>
     </div>
   `).join('') || '<div style="color:var(--muted);text-align:center;padding:20px;">Aucun événement</div>';
+}
+
+// ============ GOOGLE AGENDA (OAuth + Calendar API) ============
+// 1. Allez sur https://console.cloud.google.com/ et créez un projet
+// 2. Activez l'API "Google Calendar API" (menu API et services > Bibliothèque)
+// 3. Créez un identifiant OAuth 2.0 de type "Application Web" (API et services > Identifiants)
+// 4. Ajoutez comme "Origine JavaScript autorisée" : https://hyspiquebauer.github.io
+// 5. Copiez le "Client ID" obtenu et collez-le ci-dessous à la place de VOTRE_CLIENT_ID
+const GOOGLE_CLIENT_ID = '1009865850655-hihlgvgikh33dbcbpl00tfc9vdhm7she.apps.googleusercontent.com';
+const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+
+let gAccessToken = null;
+let gTokenClient = null;
+let gConnected = false;
+let googleEventsCache = [];
+
+function connectGoogleCalendar() {
+  if (GOOGLE_CLIENT_ID.includes('VOTRE_CLIENT_ID')) {
+    toast('⚠️ Client ID Google non configuré (voir instructions dans le code)');
+    return;
+  }
+  if (!window.google || !google.accounts) {
+    toast('❌ Google API pas encore chargée, réessayez dans un instant');
+    return;
+  }
+  if (!gTokenClient) {
+    gTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: GOOGLE_SCOPES,
+      callback: (resp) => {
+        if (resp.error) {
+          toast('❌ Connexion Google échouée');
+          return;
+        }
+        gAccessToken = resp.access_token;
+        gConnected = true;
+        updateGoogleStatus();
+        toast('✅ Google Agenda connecté');
+        importGoogleEvents();
+      },
+    });
+  }
+  gTokenClient.requestAccessToken();
+}
+
+function disconnectGoogleCalendar() {
+  if (gAccessToken && window.google && google.accounts) {
+    google.accounts.oauth2.revoke(gAccessToken, () => {});
+  }
+  gAccessToken = null;
+  gConnected = false;
+  googleEventsCache = [];
+  updateGoogleStatus();
+  renderAgenda();
+  toast('🔌 Google Agenda déconnecté');
+}
+
+function updateGoogleStatus() {
+  const el = document.getElementById('googleStatus');
+  if (!el) return;
+  el.textContent = gConnected ? '🟢 Connecté à Google Agenda' : '⚪ Non connecté';
+  el.style.color = gConnected ? 'var(--green)' : 'var(--muted)';
+  document.getElementById('btnGoogleConnect').style.display = gConnected ? 'none' : 'inline-flex';
+  document.getElementById('btnGoogleDisconnect').style.display = gConnected ? 'inline-flex' : 'none';
+}
+
+async function pushEventToGoogle(ev) {
+  if (!gConnected || !gAccessToken) return;
+  try {
+    const body = {
+      summary: ev.titre,
+      description: ev.desc || '',
+      start: { date: ev.date },
+      end: { date: ev.date },
+    };
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + gAccessToken,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      toast('📅 Synchronisé avec Google Agenda');
+      importGoogleEvents();
+    } else if (res.status === 401) {
+      toast('⚠️ Session Google expirée, reconnectez-vous');
+      gConnected = false;
+      updateGoogleStatus();
+    }
+  } catch (err) {
+    toast('❌ Erreur de synchronisation Google');
+  }
+}
+
+async function importGoogleEvents() {
+  if (!gConnected || !gAccessToken) return;
+  try {
+    const timeMin = new Date();
+    timeMin.setMonth(timeMin.getMonth() - 1);
+    const timeMax = new Date();
+    timeMax.setMonth(timeMax.getMonth() + 6);
+    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin.toISOString()}&timeMax=${timeMax.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=100`;
+    const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + gAccessToken } });
+    if (res.ok) {
+      const json = await res.json();
+      googleEventsCache = (json.items || []).map(it => ({
+        titre: it.summary || '(Sans titre)',
+        date: (it.start && (it.start.date || (it.start.dateTime || '').slice(0, 10))) || '',
+        fromGoogle: true,
+      }));
+      renderAgenda();
+    } else if (res.status === 401) {
+      gConnected = false;
+      updateGoogleStatus();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// ============ HISTORIQUE ============
+function renderHistorique() {
+  const el = document.getElementById('historiqueList');
+  if (!el) return;
+  const hist = [...(data.historique || [])].sort((a, b) => b.mois.localeCompare(a.mois));
+  if (!hist.length) {
+    el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">Aucun historique pour le moment. Les données du mois (revenus, dépenses annexes, remboursements) seront archivées ici automatiquement au début de chaque nouveau mois.</div>';
+    return;
+  }
+  el.innerHTML = hist.map(h => `
+    <div style="padding:12px;background:rgba(91,79,207,.05);border-radius:8px;margin-bottom:10px;">
+      <div style="font-weight:700;color:var(--text);margin-bottom:8px;">${moisLabel(h.mois)}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.85rem;color:var(--muted);">
+        <span>💰 Revenus : <b style="color:var(--green)">${fmt(h.totalRev)}</b></span>
+        <span>✅ Dépenses fixes payées : <b style="color:var(--text)">${fmt(h.totalDepPaye)}</b></span>
+        <span>📌 Dépenses annexes : <b style="color:var(--red)">${fmt(h.totalAnnexe)}</b></span>
+        <span>🔄 Remboursements : <b style="color:var(--green)">${fmt(h.totalRembourse)}</b></span>
+      </div>
+    </div>
+  `).join('');
 }
 
 // ============ ENFANTS ============
@@ -1991,6 +2225,7 @@ function showPage(name, btn) {
 // ============ INIT ============
 window.addEventListener('DOMContentLoaded', () => {
   loadData();
+  checkNewMonth();
   if (localStorage.getItem('dark-mode') === 'true') {
     document.body.classList.add('dark-mode');
   }
