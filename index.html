@@ -699,10 +699,9 @@
 
   <div class="card" style="margin-top:20px;">
     <div class="section-title">
-      <span>🎯 Budgets par catégorie</span>
-      <button class="add-btn" onclick="openBudgetModal()">+ Ajouter budget</button>
+      <span>📋 Factures à payer</span>
     </div>
-    <div id="budgetsList"></div>
+    <div id="facturesAPayerList"></div>
   </div>
 
   <div class="card" style="margin-top:20px;">
@@ -1303,7 +1302,7 @@ function refresh() {
 
   renderRevenues();
   renderDepenses();
-  renderBudgets();
+  renderFacturesAPayer();
   renderAnnexe();
   renderAssurance();
   renderAgenda();
@@ -1393,13 +1392,14 @@ function renderAnnexe() {
     <tr>
       <td>${dep.desc}</td>
       <td style="font-weight:700;color:var(--text);">${fmtDetail(parseFloat(dep.val) || 0)}</td>
+      <td style="text-align:center;"><input type="checkbox" ${dep.paye ? 'checked' : ''} onchange="toggleAnnexePaye(${dep.id})" style="width:18px;height:18px;cursor:pointer;"></td>
       <td><button class="del-btn" onclick="deleteAnnexe(${dep.id})">🗑</button></td>
     </tr>
   `).join('');
 
   const tableHtml = html ? `
     <table style="width:100;">
-      <thead><tr><th>Description</th><th>Montant</th><th></th></tr></thead>
+      <thead><tr><th>Description</th><th>Montant</th><th>Payé</th><th></th></tr></thead>
       <tbody>${html}</tbody>
     </table>
     <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border);display:flex;justify-content:space-between;font-weight:800;">
@@ -1409,6 +1409,36 @@ function renderAnnexe() {
   ` : '<div style="color:var(--muted);text-align:center;padding:20px;">Aucune dépense annexe</div>';
 
   document.getElementById('annexeDepsList').innerHTML = tableHtml;
+}
+
+function toggleAnnexePaye(id) {
+  const item = data.annexeDep.find(d => d.id === id);
+  if (item) item.paye = !item.paye;
+  refresh();
+}
+
+// ============ FACTURES À PAYER ============
+function renderFacturesAPayer() {
+  const impayees = data.annexeDep.filter(d => !d.paye);
+  const total = impayees.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+
+  const html = impayees.map(dep => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(239,68,68,.05);border-radius:8px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="checkbox" onchange="toggleAnnexePaye(${dep.id})" style="width:18px;height:18px;cursor:pointer;">
+        <span style="font-weight:600;color:var(--text);">${dep.desc}</span>
+      </div>
+      <span style="font-weight:700;color:var(--red);">${fmtDetail(parseFloat(dep.val) || 0)}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('facturesAPayerList').innerHTML = html ? `
+    ${html}
+    <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border);display:flex;justify-content:space-between;font-weight:800;">
+      <span>Total restant à payer</span>
+      <span style="color:var(--red);">${fmt(total)}</span>
+    </div>
+  ` : '<div style="color:var(--green);text-align:center;padding:20px;font-weight:600;">✅ Toutes les factures sont payées</div>';
 }
 
 function openAnnexeModal() {
@@ -1433,7 +1463,8 @@ function saveAnnexeModal() {
   data.annexeDep.push({
     id: Date.now(),
     desc,
-    val
+    val,
+    paye: false
   });
 
   closeAnnexeModal();
