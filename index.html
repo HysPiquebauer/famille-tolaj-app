@@ -596,6 +596,9 @@
   </div>
   <div class="header-actions">
     <button class="toggle-dark" onclick="toggleDarkMode()">🌙</button>
+    <button class="add-btn" onclick="exportBackup()" title="Télécharger une sauvegarde de vos données" style="background:var(--green);">⬇️ Sauvegarder</button>
+    <button class="add-btn" onclick="triggerImportBackup()" title="Restaurer une sauvegarde">⬆️ Restaurer</button>
+    <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="importBackup(event)">
     <button class="add-btn" onclick="openLoadDataModal()" title="Charger vos données">💾 Mes données</button>
     <button class="add-btn" onclick="loadExamples()" title="Charger données d'exemple">📥 Exemples</button>
   </div>
@@ -1109,7 +1112,7 @@ function checkNewMonth() {
 
     data.currentMonth = nowKey;
     saveData();
-    toast('📅 Nouveau mois : données archivées et remises à zéro');
+    toast('📅 Nouveau mois : données archivées et remises à zéro. Pensez à cliquer sur ⬇️ Sauvegarder !');
   }
 }
 
@@ -1133,6 +1136,54 @@ function fmtDetail(n) {
 }
 
 // ============ IMPORT GOOGLE SHEET ============
+// ============ SAUVEGARDE / RESTAURATION ============
+function exportBackup() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sauvegarde_famille_tolaj_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✅ Sauvegarde téléchargée');
+}
+
+function triggerImportBackup() {
+  document.getElementById('backupFileInput').click();
+}
+
+function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      const ok = window.confirm('⚠️ Cela va REMPLACER toutes vos données actuelles par celles de ce fichier de sauvegarde.\n\nContinuer ?');
+      if (!ok) return;
+
+      data = imported;
+      if (!data.annexeDep) data.annexeDep = [];
+      if (!data.assuranceRembourse) data.assuranceRembourse = [];
+      if (!data.historique) data.historique = [];
+      if (!data.currentMonth) data.currentMonth = currentMonthKey();
+      if (!data.depenses) data.depenses = [];
+      if (!data.revenus) data.revenus = [];
+
+      saveData();
+      refresh();
+      toast('✅ Sauvegarde restaurée avec succès');
+    } catch (err) {
+      toast('❌ Fichier invalide ou corrompu');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
 function openLoadDataModal() {
   document.getElementById('modalImport').classList.add('open');
 }
