@@ -1105,14 +1105,15 @@ function checkNewMonth() {
       totalDepPaye: totalDepPayeMois,
     });
 
-    data.revenus = data.revenus.map(r => ({ ...r, val: 0 }));
+    // Revenus et dépenses mensuelles : on les GARDE tels quels (montants inchangés).
+    // Seuls les éléments ponctuels du mois sont vidés.
     data.annexeDep = [];
     data.assuranceRembourse = [];
     data.depenses.forEach(d => { d.paye = false; });
 
     data.currentMonth = nowKey;
     saveData();
-    toast('📅 Nouveau mois : données archivées et remises à zéro. Pensez à cliquer sur ⬇️ Sauvegarder !');
+    toast('📅 Nouveau mois : le mois précédent est archivé. Pensez à cliquer sur ⬇️ Sauvegarder !');
   }
 }
 
