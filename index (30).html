@@ -1,0 +1,2637 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Famille Tolaj — Gestion Financière PRO</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --bg: #f0f2f8;
+    --card: #ffffff;
+    --primary: #5b4fcf;
+    --primary-light: #7b6fe0;
+    --primary-dark: #3d35a0;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f59e0b;
+    --blue: #3b82f6;
+    --text: #1e1b3a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --header-h: 80px;
+  }
+
+  body.dark-mode {
+    --bg: #1a1a2e;
+    --card: #16213e;
+    --text: #eaeaea;
+    --muted: #a0a0a0;
+    --border: #2d3561;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  header {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 60%, #8b5cf6 100%);
+    color: white;
+    padding: 0 24px;
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(91,79,207,.3);
+  }
+
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon { font-size: 2rem; }
+  .header-title { font-size: 1.3rem; font-weight: 700; }
+  .header-sub { font-size: .78rem; opacity: .75; }
+  .header-actions { display: flex; align-items: center; gap: 16px; }
+  .toggle-dark { background: rgba(255,255,255,.2); border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+  .toggle-dark:hover { background: rgba(255,255,255,.3); }
+
+  nav {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0;
+    padding: 0 24px;
+    position: sticky;
+    top: var(--header-h);
+    z-index: 99;
+    overflow-x: auto;
+  }
+
+  nav button {
+    padding: 14px 20px;
+    border: none;
+    background: none;
+    font-size: .88rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+
+  nav button.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  nav button:hover:not(.active) {
+    color: var(--text);
+  }
+
+  main {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .kpi-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px 24px;
+    border-left: 5px solid var(--border);
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    transition: transform 0.2s;
+  }
+
+  .kpi-card:hover { transform: translateY(-2px); }
+
+  .kpi-card.green { border-left-color: var(--green); }
+  .kpi-card.red { border-left-color: var(--red); }
+  .kpi-card.blue { border-left-color: var(--blue); }
+  .kpi-card.orange { border-left-color: var(--orange); }
+
+  .kpi-label {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .kpi-value {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--primary);
+    margin-bottom: 6px;
+  }
+
+  .kpi-card.green .kpi-value { color: var(--green); }
+  .kpi-card.red .kpi-value { color: var(--red); }
+  .kpi-card.blue .kpi-value { color: var(--blue); }
+  .kpi-card.orange .kpi-value { color: var(--orange); }
+
+  .kpi-sub {
+    font-size: .75rem;
+    color: var(--muted);
+  }
+
+  .charts-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: .95rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .chart-wrap {
+    position: relative;
+    height: 300px;
+  }
+
+  .gauge-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px 0;
+  }
+
+  .gauge-svg {
+    width: 250px;
+    height: 150px;
+  }
+
+  .gauge-label {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--primary);
+    margin-top: 10px;
+  }
+
+  .gauge-sub {
+    font-size: .85rem;
+    color: var(--muted);
+  }
+
+  .progress-section {
+    margin: 20px 0;
+  }
+
+  .progress-label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .progress-bar {
+    background: var(--border);
+    border-radius: 10px;
+    height: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.05);
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    border-radius: 10px;
+    transition: width 0.4s ease;
+  }
+
+  .table-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    margin-bottom: 16px;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+
+  td {
+    padding: 10px 12px;
+    font-size: .88rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(91,79,207,.05); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 700;
+  }
+
+  .badge.fixe { background: #e0e7ff; color: #4338ca; }
+  .badge.variable { background: #fef3c7; color: #d97706; }
+
+  .edit-input {
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: .88rem;
+    font-family: inherit;
+    color: var(--text);
+    width: 100%;
+    transition: all .15s;
+  }
+
+  .edit-input:hover { border-color: var(--border); }
+  .edit-input:focus { border-color: var(--primary); outline: none; background: rgba(91,79,207,.05); }
+
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .add-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .add-btn:hover { background: var(--primary-light); }
+
+  .del-btn {
+    background: none;
+    border: none;
+    color: #cbd5e1;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color .15s;
+  }
+
+  .del-btn:hover { color: var(--red); }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 32px;
+    min-width: 360px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  }
+
+  .modal-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  .form-group {
+    margin-bottom: 14px;
+  }
+
+  .form-group label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: .9rem;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--card);
+    transition: border-color .15s;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--primary);
+    outline: none;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 24px;
+    font-size: .9rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .btn-primary:hover { background: var(--primary-light); }
+
+  .btn-cancel {
+    background: var(--border);
+    color: var(--text);
+    border: none;
+    border-radius: 10px;
+    padding: 11px 24px;
+    font-size: .9rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .btn-cancel:hover { background: rgba(91,79,207,.1); }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1e1b3a;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: .88rem;
+    font-weight: 600;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all .3s;
+    z-index: 9999;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  .reminder-banner {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    right: 0;
+    background: linear-gradient(90deg, var(--red), #dc2626);
+    color: white;
+    padding: 12px 24px;
+    z-index: 98;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+  }
+
+  .reminder-banner.hidden { display: none; }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .event-item {
+    background: rgba(91,79,207,.05);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--primary);
+  }
+
+  .event-date {
+    font-size: .75rem;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .event-title {
+    font-weight: 700;
+    margin: 4px 0;
+    color: var(--text);
+  }
+
+  .event-desc {
+    font-size: .85rem;
+    color: var(--muted);
+  }
+
+  .vacation-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    margin-bottom: 16px;
+    border-left: 5px solid var(--primary);
+  }
+
+  .vacation-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  .vacation-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: .9rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .vacation-stat:last-child { border-bottom: none; }
+
+  .vacation-stat-label { color: var(--muted); }
+  .vacation-stat-value { font-weight: 700; color: var(--primary); }
+
+  .insight-box {
+    background: linear-gradient(135deg, rgba(91,79,207,.1) 0%, rgba(139,92,246,.1) 100%);
+    border-left: 4px solid var(--primary);
+    padding: 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+  }
+
+  .insight-title {
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .insight-text {
+    font-size: .9rem;
+    color: var(--text);
+  }
+
+  .insight-warning {
+    border-left-color: var(--red);
+    background: linear-gradient(135deg, rgba(239,68,68,.1) 0%, rgba(220,38,38,.1) 100%);
+  }
+
+  .insight-success {
+    border-left-color: var(--green);
+    background: linear-gradient(135deg, rgba(34,197,94,.1) 0%, rgba(22,163,74,.1) 100%);
+  }
+
+  @media (max-width: 900px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-row { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    nav { overflow-x: scroll; }
+  }
+
+  @media (max-width: 600px) {
+    header { flex-direction: column; gap: 10px; height: auto; padding: 12px; }
+    .header-actions { width: 100%; }
+    .kpi-grid { grid-template-columns: 1fr; }
+    .modal { min-width: 90%; }
+  }
+
+  /* ===== Connexion / synchronisation en ligne ===== */
+  .login-gate { position: fixed; inset: 0; z-index: 10000; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-card { background: var(--card); border-radius: 20px; padding: 32px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.15); }
+  .login-card h2 { margin: 8px 0 12px; color: var(--text); }
+  .login-card p { color: var(--muted); font-size: .95rem; margin-bottom: 18px; line-height: 1.45; }
+  .login-card button { width: 100%; margin-top: 10px; }
+  .cloud-status { font-size: .75rem; color: rgba(255,255,255,.85); max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ===== Nouveau design : sobre, clair / sombre ===== */
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --primary: #4f46e5; --primary-light: #6366f1; --primary-dark: #4338ca;
+    --green: #16a34a; --red: #dc2626; --orange: #d97706; --blue: #2563eb;
+    --text: #111827; --muted: #6b7280; --border: #e5e7eb;
+  }
+  body.dark-mode {
+    --bg: #0e1116; --card: #161b22; --text: #e6edf3; --muted: #8b949e; --border: #272e38;
+    --primary: #818cf8; --primary-light: #a5b4fc; --primary-dark: #6366f1;
+    --green: #4ade80; --red: #f87171; --orange: #fbbf24; --blue: #60a5fa;
+  }
+  body { font-family: Inter, 'Segoe UI', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  header { position: static; background: var(--card); color: var(--text); box-shadow: none; border-bottom: 1px solid var(--border); height: auto; min-height: 64px; padding: 12px 24px; flex-wrap: wrap; gap: 10px; }
+  .header-icon { font-size: 1.6rem; }
+  .header-title { font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; }
+  .header-sub { color: var(--muted); opacity: 1; }
+  .header-actions { gap: 8px; flex-wrap: wrap; }
+  .toggle-dark { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; }
+  .toggle-dark:hover { background: var(--border); }
+  .header-actions .add-btn { background: var(--bg) !important; color: var(--text) !important; border: 1px solid var(--border); }
+  .cloud-status { color: var(--muted); }
+  nav { top: 0; padding: 0 16px; }
+  nav button { padding: 14px 16px; border-bottom-width: 2px; }
+  .kpi-card { border: 1px solid var(--border); border-left: 1px solid var(--border); border-radius: 14px; box-shadow: none; padding: 18px 20px; }
+  .kpi-card:hover { transform: none; }
+  .kpi-card.green .kpi-value { color: var(--green); }
+  .kpi-card.red .kpi-value { color: var(--red); }
+  .kpi-card.blue .kpi-value { color: var(--blue); }
+  .kpi-card.orange .kpi-value { color: var(--orange); }
+  .card, .table-card { border: 1px solid var(--border); border-radius: 14px; box-shadow: none; }
+  .add-btn, .btn-primary, .btn-cancel { border-radius: 8px; }
+  .modal { border-radius: 16px; }
+  tr:hover td { background: rgba(127,127,127,.06); }
+  .nav-badge { display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 4px; border-radius: 99px; background: var(--red); color: #fff; font-size: .7rem; font-weight: 700; text-align: center; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: .72rem; font-weight: 700; }
+  .pill.late { background: rgba(220,38,38,.12); color: var(--red); }
+  .pill.soon { background: rgba(217,119,6,.14); color: var(--orange); }
+  .pill.ok { background: rgba(127,127,127,.14); color: var(--muted); }
+  .row-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; }
+  .row-item.done { opacity: .55; }
+  .row-item.done .row-text { text-decoration: line-through; }
+  .row-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .row-text { font-weight: 600; word-break: break-word; }
+  .row-sub { font-size: .75rem; color: var(--muted); }
+  .alert-card { border: 1px solid var(--orange); background: rgba(217,119,6,.08); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-weight: 600; cursor: pointer; }
+  .obj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .obj-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+  .obj-chart { position: relative; height: 150px; margin: 8px 0 12px; }
+  .obj-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; pointer-events: none; }
+  .big-bar { height: 10px; border-radius: 99px; background: var(--border); overflow: hidden; }
+  .big-bar > div { height: 100%; border-radius: 99px; }
+  @media (max-width: 720px) {
+    header { padding: 10px 14px; }
+    .header-sub { display: none; }
+    main { padding: 14px; }
+    .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    .kpi-value { font-size: 1.4rem; }
+    nav { padding: 0 8px; }
+    nav button { padding: 12px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="login-gate" id="loginGate">
+  <div class="login-card">
+    <div style="font-size:2.5rem;">🏠</div>
+    <h2>Famille Tolaj</h2>
+    <p id="loginMsg">Chargement…</p>
+    <button id="btnGoogleLogin" class="btn-primary" style="display:none;" onclick="window.cloudSignIn && window.cloudSignIn()">Se connecter avec Google</button>
+    <button id="btnGateReload" class="btn-primary" style="display:none;" onclick="location.reload()">Réessayer</button>
+    <button id="btnGateOffline" class="btn-cancel" style="display:none;" onclick="continueOffline()">Continuer sans connexion</button>
+  </div>
+</div>
+
+
+<div class="reminder-banner hidden" id="reminderBanner">
+  ⚠️ <span id="reminderText"></span>
+</div>
+
+<header>
+  <div class="header-left">
+    <div class="header-icon">🏠</div>
+    <div>
+      <div class="header-title">Famille Tolaj</div>
+      <div class="header-sub">Gestion financière PRO · Meyrin, Genève</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span id="cloudStatus" class="cloud-status" title="État de la synchronisation">☁️ …</span>
+    <button class="toggle-dark" onclick="toggleDarkMode()">🌙</button>
+    <button class="add-btn" onclick="exportBackup()" title="Télécharger une sauvegarde de vos données" style="background:var(--green);">⬇️ Sauvegarder</button>
+    <button class="add-btn" onclick="triggerImportBackup()" title="Restaurer une sauvegarde">⬆️ Restaurer</button>
+    <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="importBackup(event)">
+    <button class="toggle-dark" onclick="window.cloudSignOut && window.cloudSignOut()" title="Se déconnecter">🚪</button>
+  </div>
+</header>
+
+<nav id="navTabs">
+  <button class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
+  <button onclick="showPage('budget',this)">💰 Budget</button>
+  <button onclick="showPage('enfants',this)">👧 Enfants <span class="nav-badge" id="navBadgeTaches" style="display:none;"></span></button>
+  <button onclick="showPage('analyse',this)">🎯 Analyse</button>
+  <button onclick="showPage('patrimoine',this)">🏦 Patrimoine</button>
+  <button onclick="showPage('vacances',this)">✈️ Vacances</button>
+</nav>
+
+<main>
+
+<!-- ============ DASHBOARD ============ -->
+<div id="page-dashboard" class="page active">
+  <div class="kpi-grid">
+    <div class="kpi-card green">
+      <div class="kpi-label">💰 Revenus mensuels</div>
+      <div class="kpi-value" id="kpi-rev">—</div>
+      <div class="kpi-sub">Total</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">📤 Dépenses mensuelles</div>
+      <div class="kpi-value" id="kpi-dep">—</div>
+      <div class="kpi-sub">Total</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">💧 Liquidité mensuelle</div>
+      <div class="kpi-value" id="kpi-liq">—</div>
+      <div class="kpi-sub">Disponible</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">📊 Patrimoine total</div>
+      <div class="kpi-value" id="kpi-pat">—</div>
+      <div class="kpi-sub">Tous actifs</div>
+    </div>
+  </div>
+
+  <div id="dashAlerts"></div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">🧾 Prévu vs réel du mois</div>
+      <div id="pvrBox"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">⏰ Échéances des factures</div>
+      <div id="echeancesList"></div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">📊 Répartition revenus</div>
+      <div class="chart-wrap"><canvas id="chartRev"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔴 Répartition dépenses</div>
+      <div class="chart-wrap"><canvas id="chartDep"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">
+      <span>🗓️ Vue annuelle, mois par mois</span>
+      <select id="annYear" class="edit-input" style="width:auto;" onchange="renderAnnual()"></select>
+    </div>
+    <div class="chart-wrap"><canvas id="chartAnnual"></canvas></div>
+    <div id="annTable" style="overflow-x:auto;margin-top:14px;"></div>
+    <div style="font-size:.75rem;color:var(--muted);margin-top:8px;">Dépenses = dépenses mensuelles payées + dépenses annexes. Le mois en cours se met à jour en direct, les mois passés sont archivés automatiquement.</div>
+  </div>
+</div>
+
+<!-- ============ BUDGET ============ -->
+<div id="page-budget" class="page">
+  <div class="grid-2">
+    <div>
+      <div class="table-card">
+        <div class="section-title">
+          <span>💰 Revenus</span>
+          <button class="add-btn" onclick="openModal('rev')">+ Ajouter</button>
+        </div>
+        <table>
+          <thead><tr><th>Source</th><th>Montant</th><th>Type</th><th></th></tr></thead>
+          <tbody id="tbRev"></tbody>
+        </table>
+        <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border);display:flex;justify-content:space-between;font-weight:800;">
+          <span>Total</span>
+          <span id="totRev" style="color:var(--green)">—</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="table-card">
+        <div class="section-title">
+          <span>📤 Dépenses</span>
+          <button class="add-btn" onclick="openModal('dep')">+ Ajouter</button>
+        </div>
+        <table>
+          <thead><tr><th>Catégorie</th><th>Montant</th><th>Type</th><th>Payé</th><th></th></tr></thead>
+          <tbody id="tbDep"></tbody>
+        </table>
+        <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border);display:flex;justify-content:space-between;font-weight:800;">
+          <span>Total prévu</span>
+          <span id="totDep" style="color:var(--red)">—</span>
+        </div>
+        <div style="margin-top:6px;display:flex;justify-content:space-between;font-size:.85rem;font-weight:700;">
+          <span>✅ Payé ce mois</span>
+          <span id="totDepPaye" style="color:var(--green)">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <div class="section-title">
+      <span>📋 Factures à payer</span>
+    </div>
+    <div id="facturesAPayerList"></div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <div class="section-title">
+      <span>📌 Dépenses annexes mensuelles</span>
+      <button class="add-btn" onclick="openAnnexeModal()">+ Ajouter</button>
+    </div>
+    <div id="annexeDepsList"></div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <div class="section-title">
+      <span>🔄 Remboursement assurances</span>
+      <button class="add-btn" onclick="openAssuranceModal()">+ Ajouter</button>
+    </div>
+    <div id="assuranceRembourseList"></div>
+  </div>
+</div>
+
+<!-- ============ ENFANTS : TÂCHES ============ -->
+<div id="page-enfants" class="page">
+  <div class="card" style="margin-bottom:20px;">
+    <div class="section-title"><span>👧 Choses à faire pour les enfants</span></div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Tâche</label>
+      <input type="text" id="tacheText" placeholder="Ex : acheter Kimono Luna" onkeydown="if(event.key==='Enter')addTache()">
+    </div>
+    <div class="grid-2" style="margin-bottom:12px;">
+      <div class="form-group">
+        <label>Enfant</label>
+        <select id="tacheEnfant"><option>Tous</option><option>Luna</option><option>Anisa</option></select>
+      </div>
+      <div class="form-group">
+        <label>À faire par</label>
+        <select id="tacheAssignee" onchange="this.dataset.touched=1"><option>Hysen</option><option>Egzona</option></select>
+      </div>
+    </div>
+    <button class="add-btn" onclick="addTache()" style="width:100%;padding:10px;justify-content:center;">+ Ajouter la tâche</button>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button class="btn-cancel" id="btnNotif" onclick="enableNotifications()" style="padding:8px 12px;">🔔 Activer les alertes sur cet appareil</button>
+      <span id="notifInfo" style="font-size:.75rem;color:var(--muted);"></span>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Pour Hysen</div><div id="tachesHysen"></div></div>
+    <div class="card"><div class="card-title">Pour Egzona</div><div id="tachesEgzona"></div></div>
+  </div>
+  <div class="card" style="margin-top:20px;">
+    <div class="card-title">✅ Terminées</div>
+    <div id="tachesDone"></div>
+  </div>
+</div>
+
+<!-- ============ ANALYSE : OBJECTIFS ============ -->
+<div id="page-analyse" class="page">
+  <div class="card" style="margin-bottom:20px;">
+    <div class="section-title">
+      <span>🎯 Mes objectifs d'épargne</span>
+      <button class="add-btn" onclick="openObjectifModal()">+ Nouvel objectif</button>
+    </div>
+    <div id="objResume"></div>
+  </div>
+  <div class="obj-grid" id="objectifsGrid"></div>
+  <div class="card" style="margin-top:20px;">
+    <button class="add-btn" onclick="exportPDF()" style="width:100%;padding:12px;justify-content:center;">📄 Exporter rapport PDF</button>
+  </div>
+</div>
+
+<!-- ============ PATRIMOINE ============ -->
+<div id="page-patrimoine" class="page">
+  <div class="kpi-grid">
+    <div class="kpi-card orange"><div class="kpi-label">🏦 Patrimoine actuel</div><div class="kpi-value" id="patTotal">—</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">🎯 Objectif total</div><div class="kpi-value" id="patCibleTot">—</div></div>
+    <div class="kpi-card green"><div class="kpi-label">📈 Progression</div><div class="kpi-value" id="patPct">—</div></div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">📊 Répartition du patrimoine</div>
+      <div class="chart-wrap"><canvas id="chartPatrimoineComp"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title">
+        <span>🏦 Mon patrimoine</span>
+        <button class="add-btn" onclick="openPatModal()">+ Ajouter</button>
+      </div>
+      <div id="patResume"></div>
+    </div>
+  </div>
+
+  <div class="obj-grid" id="patGrid"></div>
+</div>
+
+<!-- ============ VACANCES ============ -->
+<div id="page-vacances" class="page">
+  <div class="card" style="margin-bottom:20px;">
+    <div class="section-title"><span>✈️ Créer un voyage</span></div>
+    <div class="grid-2" style="margin-bottom:12px;">
+      <div class="form-group">
+        <label>Destination</label>
+        <input type="text" id="vacDest" placeholder="Italie, Suisse, ...">
+      </div>
+      <div class="form-group">
+        <label>Budget total (CHF)</label>
+        <input type="number" id="vacBudget" step="0.01">
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom:12px;">
+      <div class="form-group">
+        <label>Date départ</label>
+        <input type="date" id="vacDebut">
+      </div>
+      <div class="form-group">
+        <label>Date retour</label>
+        <input type="date" id="vacFin">
+      </div>
+    </div>
+    <button class="add-btn" onclick="addVacation()" style="width:100%;padding:10px;">Créer voyage</button>
+  </div>
+  <div id="vacationsList"></div>
+</div>
+
+</main>
+
+<!-- MODAL IMPORT -->
+<div class="modal-overlay" id="modalImport">
+  <div class="modal">
+    <div class="modal-title">💾 Charger mes données</div>
+    <div class="form-group">
+      <label>ID du Google Sheet</label>
+      <input type="text" id="sheetId" placeholder="Collez l'ID ici">
+    </div>
+    <p style="font-size:.85rem;color:var(--muted);margin:10px 0;">
+      📌 Trouvez l'ID dans l'URL : docs.google.com/spreadsheets/d/<strong>ID</strong>/edit
+    </p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="document.getElementById('modalImport').classList.remove('open')">Annuler</button>
+      <button class="btn-primary" onclick="importFromSheet()">Charger</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRINCIPAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Ajouter</div>
+    <input type="hidden" id="modalType">
+    <div class="form-group"><label>Description</label><input type="text" id="fDesc"></div>
+    <div class="form-group"><label>Montant (CHF)</label><input type="number" id="fVal" step="0.01"></div>
+    <div class="form-group"><label>Type</label><select id="fType"><option>Fixe</option><option>Variable</option></select></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE DÉPENSES ANNEXES -->
+<div class="modal-overlay" id="modalAnnexe" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">📌 Ajouter une dépense annexe</div>
+    <div class="form-group"><label>Description</label><input type="text" id="annexeDesc" placeholder="Ex: Assurance complémentaire"></div>
+    <div class="form-group"><label>Montant (CHF)</label><input type="number" id="annexeVal" step="0.01"></div>
+    <div class="form-group"><label>Date d'échéance (optionnel)</label><input type="date" id="annexeEcheance"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAnnexeModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveAnnexeModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE REMBOURSEMENTS ASSURANCES -->
+<div class="modal-overlay" id="modalAssurance" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">🔄 Ajouter un remboursement assurance</div>
+    <div class="form-group"><label>Description</label><input type="text" id="assuranceDesc" placeholder="Ex: Remboursement Helsana - consultation"></div>
+    <div class="form-group"><label>Montant (CHF)</label><input type="number" id="assuranceVal" step="0.01"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAssuranceModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveAssuranceModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE PATRIMOINE -->
+<div class="modal-overlay" id="modalPat" style="display:none;">
+  <div class="modal">
+    <div class="modal-title" id="patModalTitle">🏦 Ajouter au patrimoine</div>
+    <input type="hidden" id="patId">
+    <div class="form-group"><label>Nom</label><input type="text" id="patNom" placeholder="Ex : Fonds d'urgence, Pilier 3A Hysen, IBKR"></div>
+    <div class="form-group"><label>Catégorie</label>
+      <select id="patCategorie">
+        <option>Fonds d'urgence</option><option>Épargne</option><option>Prévoyance 3A</option><option>Épargne 3B</option>
+        <option>Investissement</option><option>Immobilier</option><option>Autre</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Montant actuel (CHF)</label><input type="number" id="patActuel" step="0.01"></div>
+    <div class="form-group"><label>Objectif (CHF, optionnel)</label><input type="number" id="patCible" step="0.01"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closePatModal()">Annuler</button>
+      <button class="btn-primary" onclick="savePatModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE OBJECTIF -->
+<div class="modal-overlay" id="modalObjectif" style="display:none;">
+  <div class="modal">
+    <div class="modal-title" id="objModalTitle">🎯 Nouvel objectif</div>
+    <input type="hidden" id="objId">
+    <div class="form-group"><label>Nom de l'objectif</label><input type="text" id="objNom" placeholder="Ex : Vacances été, Voiture, Fonds travaux"></div>
+    <div class="form-group"><label>Montant à atteindre (CHF)</label><input type="number" id="objCible" step="0.01"></div>
+    <div class="form-group"><label>Montant déjà mis de côté (CHF)</label><input type="number" id="objActuel" step="0.01"></div>
+    <div class="form-group"><label>Date cible (optionnel)</label><input type="date" id="objEcheance"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeObjectifModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveObjectifModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ DATA & STORAGE ============
+const STORAGE_KEY = 'famille_tolaj_pro_v1';
+// Les modules Firebase attendent que l'appli ait chargé ses données locales
+window.__appReadyPromise = new Promise(res => { window.__resolveAppReady = res; });
+
+let data = {
+  revenus: [],
+  depenses: [],
+  budgets: {},
+  epargne: [],
+  investissements: [],
+  urgence: { solde: 0, objectif: 0 },
+  events: [],
+  vacations: [],
+  annexeDep: [],
+  assuranceRembourse: [],
+  historique: [],
+  taches: [],
+  objectifs: [],
+  patrimoine: [],
+  currentMonth: null,
+};
+
+const DIRTY_KEY = 'famille_tolaj_dirty';
+const BACKUP_BEFORE_CLOUD_KEY = 'famille_tolaj_pro_v1_avant_cloud';
+
+function ensureDataDefaults() {
+  if (!data || typeof data !== 'object') data = {};
+  ['revenus', 'depenses', 'epargne', 'investissements', 'events', 'vacations', 'annexeDep', 'assuranceRembourse', 'historique', 'taches', 'objectifs', 'patrimoine']
+    .forEach(k => { if (!Array.isArray(data[k])) data[k] = []; });
+  if (!data.budgets || typeof data.budgets !== 'object') data.budgets = {};
+  if (!data.urgence || typeof data.urgence !== 'object') data.urgence = { solde: 0, objectif: 0 };
+  if (!data.currentMonth) data.currentMonth = null;
+  migratePatrimoine();
+}
+
+function migratePatrimoine() {
+  if (data.patrimoineMigre) return;
+  const items = [];
+  let n = 0;
+  const id = () => Date.now() + (n++);
+  const u = data.urgence || {};
+  if ((parseFloat(u.solde) || 0) > 0 || (parseFloat(u.objectif) || 0) > 0) {
+    items.push({ id: id(), nom: "Fonds d'urgence", categorie: "Fonds d'urgence", actuel: parseFloat(u.solde) || 0, cible: parseFloat(u.objectif) || 0 });
+  }
+  (data.epargne || []).forEach(e => {
+    const v = parseFloat(e.annuel) || 0;
+    if (v > 0) items.push({ id: id(), nom: (e.etab && e.etab !== 'N/A' ? e.etab + ' ' : '') + 'pilier ' + (e.pilier || '') + ' (' + (e.membre || '') + ')', categorie: e.pilier === '3A' ? 'Prévoyance 3A' : 'Épargne 3B', actuel: v, cible: 0 });
+  });
+  (data.investissements || []).forEach(i => {
+    const v = parseFloat(i.val) || 0;
+    if (v > 0) items.push({ id: id(), nom: i.nom || 'Investissement', categorie: 'Investissement', actuel: v, cible: 0 });
+  });
+  if (!Array.isArray(data.patrimoine) || !data.patrimoine.length) data.patrimoine = items;
+  data.patrimoineMigre = true;
+}
+
+function dataHasContent(obj) {
+  if (!obj || typeof obj !== 'object') return false;
+  const lists = ['revenus', 'depenses', 'epargne', 'investissements', 'events', 'vacations', 'annexeDep', 'assuranceRembourse', 'historique', 'taches', 'objectifs', 'patrimoine'];
+  if (lists.some(k => Array.isArray(obj[k]) && obj[k].length > 0)) return true;
+  if (obj.budgets && typeof obj.budgets === 'object' && Object.keys(obj.budgets).length > 0) return true;
+  if (obj.urgence && (parseFloat(obj.urgence.solde) || parseFloat(obj.urgence.objectif))) return true;
+  return false;
+}
+
+function localHasData() { return dataHasContent(data); }
+function getDataJson() { return JSON.stringify(data); }
+function markDirty() { try { localStorage.setItem(DIRTY_KEY, '1'); } catch (e) {} }
+function clearDirty() { try { localStorage.removeItem(DIRTY_KEY); } catch (e) {} }
+function isDirty() { try { return localStorage.getItem(DIRTY_KEY) === '1'; } catch (e) { return false; } }
+function backupLocalBeforeCloud(json) { try { localStorage.setItem(BACKUP_BEFORE_CLOUD_KEY, json); } catch (e) {} }
+
+function saveData() {
+  const json = JSON.stringify(data);
+  localStorage.setItem(STORAGE_KEY, json);
+  if (window.__cloudReady && typeof window.cloudSaveHook === 'function') {
+    window.cloudSaveHook(json);
+  } else if (window.__offlineMode) {
+    markDirty();
+  }
+}
+
+function loadData() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    try { data = JSON.parse(stored); } catch (e) { console.error('Données locales illisibles', e); }
+  }
+  ensureDataDefaults();
+}
+
+// Appelé quand la version en ligne remplace la version de cet appareil
+function applyRemoteJson(json) {
+  try {
+    const before = new Set((data.taches || []).map(t => t.id));
+    data = JSON.parse(json);
+    ensureDataDefaults();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    checkNewMonth();
+    refresh();
+    const me = currentUserName();
+    if (me) {
+      const fresh = data.taches.filter(t => !t.done && !before.has(t.id) && t.assignee === me && t.by !== me);
+      if (fresh.length) notifyNewTasks(fresh);
+    }
+  } catch (e) {
+    console.error(e);
+    toast('❌ Données en ligne illisibles');
+  }
+}
+
+// ============ ÉTAT DE LA SYNCHRONISATION ============
+function setCloudStatus(text, state) {
+  const el = document.getElementById('cloudStatus');
+  if (!el) return;
+  el.textContent = text;
+  el.title = text;
+  el.style.color = state === 'err' ? 'var(--red)' : (state === 'ok' ? 'var(--green)' : 'var(--muted)');
+}
+
+function showGate(mode, msg) {
+  const g = document.getElementById('loginGate');
+  if (!g) return;
+  g.style.display = 'flex';
+  document.getElementById('loginMsg').textContent = msg || '';
+  const login = document.getElementById('btnGoogleLogin');
+  login.style.display = (mode === 'login' || mode === 'denied') ? 'block' : 'none';
+  login.textContent = mode === 'denied' ? 'Se connecter avec un autre compte' : 'Se connecter avec Google';
+  document.getElementById('btnGateReload').style.display = mode === 'offline' ? 'block' : 'none';
+  document.getElementById('btnGateOffline').style.display = mode === 'offline' ? 'block' : 'none';
+}
+
+function hideGate() {
+  const g = document.getElementById('loginGate');
+  if (g) g.style.display = 'none';
+}
+
+function continueOffline() {
+  window.__offlineMode = true;
+  hideGate();
+  setCloudStatus('⚠️ Hors ligne : modifications non synchronisées', 'err');
+}
+
+// ============ REMISE À ZÉRO MENSUELLE ============
+function currentMonthKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function moisLabel(key) {
+  const [y, m] = key.split('-');
+  const noms = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+  return noms[parseInt(m, 10) - 1] + ' ' + y;
+}
+
+function checkNewMonth() {
+  const nowKey = currentMonthKey();
+
+  if (!data.currentMonth) {
+    data.currentMonth = nowKey;
+    saveData();
+    return;
+  }
+
+  if (data.currentMonth !== nowKey) {
+    const totalRevMois = data.revenus.reduce((s, r) => s + (parseFloat(r.val) || 0), 0);
+    const totalAnnexeMois = data.annexeDep.reduce((s, a) => s + (parseFloat(a.val) || 0), 0);
+    const totalRembourseMois = data.assuranceRembourse.reduce((s, a) => s + (parseFloat(a.val) || 0), 0);
+    const totalDepPayeMois = data.depenses.filter(d => d.paye).reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+
+    if (!data.historique) data.historique = [];
+    data.historique.push({
+      mois: data.currentMonth,
+      revenus: JSON.parse(JSON.stringify(data.revenus)),
+      annexeDep: JSON.parse(JSON.stringify(data.annexeDep)),
+      assuranceRembourse: JSON.parse(JSON.stringify(data.assuranceRembourse)),
+      totalRev: totalRevMois,
+      totalAnnexe: totalAnnexeMois,
+      totalRembourse: totalRembourseMois,
+      totalDepPaye: totalDepPayeMois,
+    });
+
+    // Revenus et dépenses mensuelles : on les GARDE tels quels (montants inchangés).
+    // Seuls les éléments ponctuels du mois sont vidés.
+    data.annexeDep = [];
+    data.assuranceRembourse = [];
+    data.depenses.forEach(d => { d.paye = false; });
+
+    data.currentMonth = nowKey;
+    saveData();
+    toast('📅 Nouveau mois : le mois précédent est archivé. Pensez à cliquer sur ⬇️ Sauvegarder !');
+  }
+}
+
+function fmt(n) {
+  if (!n || n === 0) return '—';
+  return new Intl.NumberFormat('fr-CH', {
+    style: 'currency',
+    currency: 'CHF',
+    maximumFractionDigits: 0
+  }).format(n);
+}
+
+function fmtDetail(n) {
+  if (!n) return '0 CHF';
+  return new Intl.NumberFormat('fr-CH', {
+    style: 'currency',
+    currency: 'CHF',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(n);
+}
+
+// ============ IMPORT GOOGLE SHEET ============
+// ============ SAUVEGARDE / RESTAURATION ============
+function exportBackup() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sauvegarde_famille_tolaj_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✅ Sauvegarde téléchargée');
+}
+
+function triggerImportBackup() {
+  document.getElementById('backupFileInput').click();
+}
+
+function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      const ok = window.confirm('⚠️ Cela va REMPLACER toutes vos données actuelles, y compris les données en ligne partagées avec Egzona, par celles de ce fichier de sauvegarde.\n\nContinuer ?');
+      if (!ok) return;
+
+      data = imported;
+      if (!data.annexeDep) data.annexeDep = [];
+      if (!data.assuranceRembourse) data.assuranceRembourse = [];
+      if (!data.historique) data.historique = [];
+      if (!data.currentMonth) data.currentMonth = currentMonthKey();
+      if (!data.depenses) data.depenses = [];
+      if (!data.revenus) data.revenus = [];
+
+      saveData();
+      refresh();
+      toast('✅ Sauvegarde restaurée avec succès');
+    } catch (err) {
+      toast('❌ Fichier invalide ou corrompu');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function openLoadDataModal() {
+  document.getElementById('modalImport').classList.add('open');
+}
+
+function loadExamples() {
+  const confirm = window.confirm('⚠️ Cela va charger les données d\'exemple.\n\nVos données actuelles seront REMPLACÉES !\n\nContinuer ?');
+  if (!confirm) return;
+
+  data = {
+    revenus: [
+      { id: 1, desc: 'Allocations familiales', val: 644, type: 'Fixe' },
+      { id: 2, desc: 'GFS Salaire (Hysen)', val: 5600, type: 'Variable' },
+      { id: 3, desc: 'Loyer Livron (Hysen)', val: 2420, type: 'Fixe' },
+      { id: 4, desc: 'Hospice Salaire (Egzona)', val: 4202.10, type: 'Fixe' },
+    ],
+    depenses: [
+      { id: 1, desc: 'Loyer Livron', val: 1760, type: 'Fixe', cat: 'Logement' },
+      { id: 2, desc: 'Parking Livron', val: 80, type: 'Fixe', cat: 'Logement' },
+      { id: 3, desc: 'Loyer Rosset', val: 2380, type: 'Fixe', cat: 'Logement' },
+      { id: 4, desc: 'Assurance Helsana', val: 1190.55, type: 'Fixe', cat: 'Assurances' },
+      { id: 5, desc: 'Assurance GM', val: 110, type: 'Fixe', cat: 'Assurances' },
+      { id: 6, desc: 'Assurance Assura', val: 20, type: 'Fixe', cat: 'Assurances' },
+      { id: 7, desc: 'Pilier 3A Bâloise', val: 150, type: 'Fixe', cat: 'Épargne' },
+      { id: 8, desc: 'Pilier 3B Generali', val: 200, type: 'Fixe', cat: 'Épargne' },
+      { id: 9, desc: 'Pilier 3B RG', val: 500, type: 'Fixe', cat: 'Épargne' },
+      { id: 10, desc: 'Pilier 3A Pax', val: 600, type: 'Fixe', cat: 'Épargne' },
+      { id: 11, desc: 'Garderie Anisa', val: 244.35, type: 'Fixe', cat: 'Autre' },
+      { id: 12, desc: 'Courses Migros/Coop', val: 600, type: 'Variable', cat: 'Alimentation' },
+      { id: 13, desc: 'Swisscom', val: 379.55, type: 'Variable', cat: 'Autre' },
+      { id: 14, desc: 'Santé/Dentiste', val: 380.81, type: 'Fixe', cat: 'Santé' },
+      { id: 15, desc: 'InteractiveBrookers', val: 1000, type: 'Fixe', cat: 'Investissements' },
+      { id: 16, desc: 'Shopping/Divers', val: 300, type: 'Variable', cat: 'Autre' },
+    ],
+    budgets: {
+      'Logement': 4220,
+      'Assurances': 1320,
+      'Épargne': 1450,
+      'Alimentation': 600,
+      'Santé': 380,
+      'Autre': 1700,
+    },
+    epargne: [
+      { id: 1, membre: 'Hysen', pilier: '3A', etab: 'Bâloise', montant: 150, annuel: 1800 },
+      { id: 2, membre: 'Hysen', pilier: '3B', etab: 'RG', montant: 500, annuel: 6000 },
+      { id: 3, membre: 'Egzona', pilier: '3A', etab: 'Pax', montant: 600, annuel: 7200 },
+      { id: 4, membre: 'Luna', pilier: '3B', etab: 'N/A', montant: 0, annuel: 0 },
+      { id: 5, membre: 'Anisa', pilier: '3B', etab: 'N/A', montant: 0, annuel: 0 },
+    ],
+    investissements: [
+      { id: 1, nom: 'InteractiveBrookers', type: 'Actions', val: 1000 },
+    ],
+    urgence: { solde: 15000, objectif: 35000 },
+    events: [],
+    vacations: [],
+    annexeDep: [
+      { id: 1, desc: 'Assurance complémentaire', val: 85.50 },
+      { id: 2, desc: 'Frais scolaires Luna', val: 150 },
+    ],
+    assuranceRembourse: [
+      { id: 1, desc: 'Remboursement Helsana - consultation', val: 85 },
+      { id: 2, desc: 'Remboursement dentiste', val: 200 },
+    ],
+    historique: [],
+    currentMonth: currentMonthKey(),
+  };
+
+  saveData();
+  toast('✅ Données d\'exemple chargées !');
+  refresh();
+}
+
+function openImportModal() {
+  document.getElementById('modalImport').classList.add('open');
+}
+
+function importFromSheet() {
+  const sheetId = document.getElementById('sheetId').value.trim();
+  if (!sheetId) {
+    toast('❌ Veuillez entrer un ID');
+    return;
+  }
+
+  // Pour cette version, on va faire un import simple
+  // En vrai, il faudrait utiliser Google Sheets API
+  // Pour maintenant, on propose d'importer les données pré-chargées
+  
+  data = {
+    revenus: [
+      { id: 1, desc: 'Allocations familiales', val: 644, type: 'Fixe' },
+      { id: 2, desc: 'GFS Salaire (Hysen)', val: 5600, type: 'Variable' },
+      { id: 3, desc: 'Loyer Livron (Hysen)', val: 2420, type: 'Fixe' },
+      { id: 4, desc: 'Hospice Salaire (Egzona)', val: 4202.10, type: 'Fixe' },
+    ],
+    depenses: [
+      { id: 1, desc: 'Loyer Livron', val: 1760, type: 'Fixe', cat: 'Logement' },
+      { id: 2, desc: 'Parking Livron', val: 80, type: 'Fixe', cat: 'Logement' },
+      { id: 3, desc: 'Loyer Rosset', val: 2380, type: 'Fixe', cat: 'Logement' },
+      { id: 4, desc: 'Assurance Helsana', val: 1190.55, type: 'Fixe', cat: 'Assurances' },
+      { id: 5, desc: 'Assurance GM', val: 110, type: 'Fixe', cat: 'Assurances' },
+      { id: 6, desc: 'Assurance Assura', val: 20, type: 'Fixe', cat: 'Assurances' },
+      { id: 7, desc: 'Pilier 3A Bâloise', val: 150, type: 'Fixe', cat: 'Épargne' },
+      { id: 8, desc: 'Pilier 3B Generali', val: 200, type: 'Fixe', cat: 'Épargne' },
+      { id: 9, desc: 'Pilier 3B RG', val: 500, type: 'Fixe', cat: 'Épargne' },
+      { id: 10, desc: 'Pilier 3A Pax', val: 600, type: 'Fixe', cat: 'Épargne' },
+      { id: 11, desc: 'Garderie Anisa', val: 244.35, type: 'Fixe', cat: 'Autre' },
+      { id: 12, desc: 'Courses Migros/Coop', val: 600, type: 'Variable', cat: 'Alimentation' },
+      { id: 13, desc: 'Swisscom', val: 379.55, type: 'Variable', cat: 'Autre' },
+      { id: 14, desc: 'Santé/Dentiste', val: 380.81, type: 'Fixe', cat: 'Santé' },
+      { id: 15, desc: 'InteractiveBrookers', val: 1000, type: 'Fixe', cat: 'Investissements' },
+      { id: 16, desc: 'Shopping/Divers', val: 300, type: 'Variable', cat: 'Autre' },
+    ],
+    budgets: {
+      'Logement': 4220,
+      'Assurances': 1320,
+      'Épargne': 1450,
+      'Alimentation': 600,
+      'Santé': 380,
+      'Autre': 1700,
+    },
+    epargne: [
+      { id: 1, membre: 'Hysen', pilier: '3A', etab: 'Bâloise', montant: 150, annuel: 1800 },
+      { id: 2, membre: 'Hysen', pilier: '3B', etab: 'RG', montant: 500, annuel: 6000 },
+      { id: 3, membre: 'Egzona', pilier: '3A', etab: 'Pax', montant: 600, annuel: 7200 },
+      { id: 4, membre: 'Luna', pilier: '3B', etab: 'N/A', montant: 0, annuel: 0 },
+      { id: 5, membre: 'Anisa', pilier: '3B', etab: 'N/A', montant: 0, annuel: 0 },
+    ],
+    investissements: [
+      { id: 1, nom: 'InteractiveBrookers', type: 'Actions', val: 1000 },
+    ],
+    urgence: { solde: 15000, objectif: 35000 },
+    events: [],
+    vacations: [],
+    annexeDep: [],
+    assuranceRembourse: [],
+    historique: [],
+    currentMonth: currentMonthKey(),
+  };
+
+  saveData();
+  document.getElementById('modalImport').classList.remove('open');
+  toast('✅ Données importées !');
+  refresh();
+}
+
+// ============ CALCULATIONS ============
+function calc() {
+  const totalRev = data.revenus.reduce((s, r) => s + (parseFloat(r.val) || 0), 0) + 
+                   data.assuranceRembourse.reduce((s, a) => s + (parseFloat(a.val) || 0), 0);
+  const totalDep = data.depenses.reduce((s, d) => s + (parseFloat(d.val) || 0), 0) +
+                   data.annexeDep.reduce((s, a) => s + (parseFloat(a.val) || 0), 0);
+  const liq = totalRev - totalDep;
+  const totalEp = data.epargne.reduce((s, e) => s + (parseFloat(e.annuel) || 0), 0);
+  const totalInv = data.investissements.reduce((s, i) => s + (parseFloat(i.val) || 0), 0);
+  const totalPat = data.patrimoine.reduce((s, p) => s + (parseFloat(p.actuel) || 0), 0);
+
+  return { totalRev, totalDep, liq, totalEp, totalInv, totalPat };
+}
+
+// ============ REFRESH ============
+function refresh() {
+  const { totalRev, totalDep, liq, totalEp, totalInv, totalPat } = calc();
+
+  document.getElementById('kpi-rev').textContent = fmt(totalRev);
+  document.getElementById('kpi-dep').textContent = fmt(totalDep);
+  document.getElementById('kpi-liq').textContent = fmt(liq);
+  document.getElementById('kpi-pat').textContent = fmt(totalPat);
+
+  renderRevenues();
+  renderDepenses();
+  renderFacturesAPayer();
+  renderAnnexe();
+  renderAssurance();
+  renderPrevuReel();
+  renderTaches();
+  renderObjectifs();
+  renderAnnual();
+  renderPatrimoine(totalPat, totalInv, totalEp);
+  renderVacations();
+  renderCharts(totalRev, totalDep);
+  saveData();
+}
+
+// ============ REVENUES ============
+function renderRevenues() {
+  const tot = data.revenus.reduce((s, r) => s + (parseFloat(r.val) || 0), 0);
+  document.getElementById('tbRev').innerHTML = data.revenus.map((r, i) => `
+    <tr>
+      <td>${r.desc || ''}</td>
+      <td><input class="edit-input" type="number" value="${r.val || ''}" onchange="data.revenus[${i}].val=parseFloat(this.value)||0;refresh()" step="0.01" style="max-width:120px;"></td>
+      <td><span class="badge ${r.type === 'Fixe' ? 'fixe' : 'variable'}">${r.type}</span></td>
+      <td><button class="del-btn" onclick="data.revenus.splice(${i},1);refresh()">🗑</button></td>
+    </tr>
+  `).join('');
+  document.getElementById('totRev').textContent = fmt(tot);
+
+}
+
+// ============ DEPENSES ============
+function renderDepenses() {
+  const tot = data.depenses.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+  const totPaye = data.depenses.filter(d => d.paye).reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+  document.getElementById('tbDep').innerHTML = data.depenses.map((d, i) => `
+    <tr>
+      <td>${d.desc || ''}</td>
+      <td><input class="edit-input" type="number" value="${d.val || ''}" onchange="data.depenses[${i}].val=parseFloat(this.value)||0;refresh()" step="0.01" style="max-width:120px;"></td>
+      <td><span class="badge ${d.type === 'Fixe' ? 'fixe' : 'variable'}">${d.type}</span></td>
+      <td style="text-align:center;"><input type="checkbox" ${d.paye ? 'checked' : ''} onchange="data.depenses[${i}].paye=this.checked;refresh()" style="width:18px;height:18px;cursor:pointer;"></td>
+      <td><button class="del-btn" onclick="data.depenses.splice(${i},1);refresh()">🗑</button></td>
+    </tr>
+  `).join('');
+  document.getElementById('totDep').textContent = fmt(tot);
+  document.getElementById('totDepPaye').textContent = fmt(totPaye);
+}
+
+// ============ BUDGETS ============
+function renderBudgets() {
+  const html = Object.entries(data.budgets).map(([cat, budget]) => {
+    const real = data.depenses.filter(d => d.cat === cat).reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+    const ecart = real - budget;
+    const pctUse = budget > 0 ? (real / budget * 100).toFixed(0) : 0;
+    const status = real > budget ? 'dépassé' : 'ok';
+
+    return `
+      <div style="padding:12px;background:rgba(91,79,207,.05);border-radius:8px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div>
+            <div style="font-weight:700;color:var(--text);">${cat}</div>
+            <div style="font-size:.85rem;color:var(--muted);">Budget: ${fmt(budget)} | Réel: ${fmt(real)}</div>
+          </div>
+          <button class="del-btn" onclick="delete data.budgets['${cat}'];refresh()">🗑</button>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${Math.min(pctUse, 100)}%;background:${status === 'ok' ? 'var(--green)' : 'var(--red)'}"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:4px;">
+          <span>${pctUse}% utilisé</span>
+          <span style="color:${status === 'ok' ? 'var(--green)' : 'var(--red)'};">${status === 'ok' ? '✓ OK' : '⚠ Dépassé de ' + fmt(Math.abs(ecart))}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('budgetsList').innerHTML = html || '<div style="color:var(--muted);text-align:center;padding:20px;">Aucun budget</div>';
+}
+
+// ============ DÉPENSES ANNEXES MENSUELLES ============
+function renderAnnexe() {
+  const total = data.annexeDep.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+  
+  const html = data.annexeDep.map(dep => `
+    <tr>
+      <td>${esc(dep.desc)}</td>
+      <td style="font-weight:700;color:var(--text);">${fmtDetail(parseFloat(dep.val) || 0)}</td>
+      <td>${dep.echeance ? new Date(dep.echeance + 'T00:00:00').toLocaleDateString('fr-CH') : '—'}</td>
+      <td style="text-align:center;"><input type="checkbox" ${dep.paye ? 'checked' : ''} onchange="toggleAnnexePaye(${dep.id})" style="width:18px;height:18px;cursor:pointer;"></td>
+      <td><button class="del-btn" onclick="deleteAnnexe(${dep.id})">🗑</button></td>
+    </tr>
+  `).join('');
+
+  const tableHtml = html ? `
+    <table style="width:100;">
+      <thead><tr><th>Description</th><th>Montant</th><th>Échéance</th><th>Payé</th><th></th></tr></thead>
+      <tbody>${html}</tbody>
+    </table>
+    <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border);display:flex;justify-content:space-between;font-weight:800;">
+      <span>Total dépenses annexes</span>
+      <span style="color:var(--red);">${fmt(total)}</span>
+    </div>
+  ` : '<div style="color:var(--muted);text-align:center;padding:20px;">Aucune dépense annexe</div>';
+
+  document.getElementById('annexeDepsList').innerHTML = tableHtml;
+}
+
+function toggleAnnexePaye(id) {
+  const item = data.annexeDep.find(d => d.id === id);
+  if (item) item.paye = !item.paye;
+  refresh();
+}
+
+// ============ FACTURES À PAYER ============
+function dueInfo(s) {
+  if (!s) return null;
+  const d = new Date(s + 'T00:00:00');
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  const diff = Math.round((d - t) / 86400000);
+  if (diff < 0) return { txt: 'En retard de ' + (-diff) + ' j', cls: 'late', diff };
+  if (diff === 0) return { txt: "Aujourd'hui", cls: 'soon', diff };
+  if (diff <= 7) return { txt: 'Dans ' + diff + ' j', cls: 'soon', diff };
+  return { txt: d.toLocaleDateString('fr-CH'), cls: 'ok', diff };
+}
+
+function sortByEcheance(list) {
+  return [...list].sort((a, b) => {
+    if (a.echeance && b.echeance) return a.echeance.localeCompare(b.echeance);
+    if (a.echeance) return -1;
+    if (b.echeance) return 1;
+    return 0;
+  });
+}
+
+function renderFacturesAPayer() {
+  const impayees = sortByEcheance(data.annexeDep.filter(d => !d.paye));
+  const total = impayees.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+
+  const html = impayees.map(dep => {
+    const info = dueInfo(dep.echeance);
+    return `
+    <div class="row-item">
+      <div class="row-left">
+        <input type="checkbox" onchange="toggleAnnexePaye(${dep.id})" style="width:18px;height:18px;cursor:pointer;">
+        <div>
+          <div class="row-text">${esc(dep.desc)}</div>
+          ${info ? `<span class="pill ${info.cls}">${info.txt}</span>` : '<span class="row-sub">Pas d\'échéance</span>'}
+        </div>
+      </div>
+      <span style="font-weight:700;color:var(--red);white-space:nowrap;">${fmtDetail(parseFloat(dep.val) || 0)}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('facturesAPayerList').innerHTML = html ? `
+    ${html}
+    <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border);display:flex;justify-content:space-between;font-weight:800;">
+      <span>Total restant à payer</span>
+      <span style="color:var(--red);">${fmt(total)}</span>
+    </div>
+  ` : '<div style="color:var(--green);text-align:center;padding:20px;font-weight:600;">✅ Toutes les factures sont payées</div>';
+
+  // Tableau de bord : factures impayées avec une date d'échéance
+  const dash = impayees.filter(d => d.echeance).slice(0, 6);
+  const sansDate = impayees.length - impayees.filter(d => d.echeance).length;
+  const el = document.getElementById('echeancesList');
+  if (el) {
+    el.innerHTML = dash.length ? dash.map(dep => {
+      const info = dueInfo(dep.echeance);
+      return `<div class="row-item"><div><div class="row-text">${esc(dep.desc)}</div><span class="pill ${info.cls}">${info.txt}</span></div><span style="font-weight:700;white-space:nowrap;">${fmtDetail(parseFloat(dep.val) || 0)}</span></div>`;
+    }).join('') + (sansDate ? `<div class="row-sub">+ ${sansDate} facture(s) sans date d'échéance</div>` : '')
+      : `<div style="color:var(--muted);padding:10px 0;">${impayees.length ? impayees.length + ' facture(s) impayée(s) sans date. Ajoute une échéance dans Budget → Dépenses annexes.' : '✅ Aucune facture à payer.'}</div>`;
+  }
+}
+
+function openAnnexeModal() {
+  document.getElementById('annexeDesc').value = '';
+  document.getElementById('annexeVal').value = '';
+  document.getElementById('annexeEcheance').value = '';
+  document.getElementById('modalAnnexe').style.display = 'flex';
+}
+
+function closeAnnexeModal() {
+  document.getElementById('modalAnnexe').style.display = 'none';
+}
+
+function saveAnnexeModal() {
+  const desc = document.getElementById('annexeDesc').value.trim();
+  const val = parseFloat(document.getElementById('annexeVal').value) || 0;
+
+  if (!desc || val <= 0) {
+    toast('❌ Remplissez tous les champs');
+    return;
+  }
+
+  data.annexeDep.push({
+    id: Date.now(),
+    desc,
+    val,
+    echeance: document.getElementById('annexeEcheance').value || '',
+    paye: false
+  });
+
+  closeAnnexeModal();
+  refresh();
+  toast('✅ Dépense annexe ajoutée');
+}
+
+function deleteAnnexe(id) {
+  data.annexeDep = data.annexeDep.filter(d => d.id !== id);
+  refresh();
+  toast('✅ Dépense annexe supprimée');
+}
+
+// ============ REMBOURSEMENTS ASSURANCES ============
+function renderAssurance() {
+  const total = data.assuranceRembourse.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+  
+  const html = data.assuranceRembourse.map(rem => `
+    <tr>
+      <td>${rem.desc}</td>
+      <td style="font-weight:700;color:var(--green);">${fmtDetail(parseFloat(rem.val) || 0)}</td>
+      <td><button class="del-btn" onclick="deleteAssurance(${rem.id})">🗑</button></td>
+    </tr>
+  `).join('');
+
+  const tableHtml = html ? `
+    <table style="width:100%;">
+      <thead><tr><th>Description</th><th>Montant</th><th></th></tr></thead>
+      <tbody>${html}</tbody>
+    </table>
+    <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border);display:flex;justify-content:space-between;font-weight:800;">
+      <span>Total remboursements</span>
+      <span style="color:var(--green);">${fmt(total)}</span>
+    </div>
+  ` : '<div style="color:var(--muted);text-align:center;padding:20px;">Aucun remboursement</div>';
+
+  document.getElementById('assuranceRembourseList').innerHTML = tableHtml;
+}
+
+function openAssuranceModal() {
+  document.getElementById('assuranceDesc').value = '';
+  document.getElementById('assuranceVal').value = '';
+  document.getElementById('modalAssurance').style.display = 'flex';
+}
+
+function closeAssuranceModal() {
+  document.getElementById('modalAssurance').style.display = 'none';
+}
+
+function saveAssuranceModal() {
+  const desc = document.getElementById('assuranceDesc').value.trim();
+  const val = parseFloat(document.getElementById('assuranceVal').value) || 0;
+
+  if (!desc || val <= 0) {
+    toast('❌ Remplissez tous les champs');
+    return;
+  }
+
+  data.assuranceRembourse.push({
+    id: Date.now(),
+    desc,
+    val
+  });
+
+  closeAssuranceModal();
+  refresh();
+  toast('✅ Remboursement ajouté');
+}
+
+function deleteAssurance(id) {
+  data.assuranceRembourse = data.assuranceRembourse.filter(d => d.id !== id);
+  refresh();
+  toast('✅ Remboursement supprimé');
+}
+
+// ============ OUTILS ============
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+const USERS = { 'hysentolaj@gmail.com': 'Hysen', 'hamzajegzona27@gmail.com': 'Egzona' };
+function currentUserName() {
+  const e = (window.__userEmail || '').toLowerCase();
+  return USERS[e] || null;
+}
+
+// ============ PRÉVU VS RÉEL ============
+function renderPrevuReel() {
+  const el = document.getElementById('pvrBox');
+  if (!el) return;
+  const prevuFixes = data.depenses.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+  const prevuAnnexes = data.annexeDep.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+  const reelFixes = data.depenses.filter(d => d.paye).reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+  const reelAnnexes = data.annexeDep.filter(d => d.paye).reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+  const prevu = prevuFixes + prevuAnnexes;
+  const reel = reelFixes + reelAnnexes;
+  const reste = prevu - reel;
+  const pct = prevu > 0 ? Math.min(100, reel / prevu * 100) : 0;
+  const { totalRev } = calc();
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);margin-bottom:6px;">
+      <span>Payé : <b style="color:var(--text)">${fmtDetail(reel)}</b></span>
+      <span>Prévu : <b style="color:var(--text)">${fmtDetail(prevu)}</b></span>
+    </div>
+    <div class="big-bar"><div style="width:${pct.toFixed(0)}%;background:var(--primary);"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:.9rem;">
+      <span>Reste à payer</span><b style="color:var(--red)">${fmtDetail(reste)}</b>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:.9rem;">
+      <span>Revenus du mois</span><b style="color:var(--green)">${fmtDetail(totalRev)}</b>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:.9rem;">
+      <span>Solde prévu en fin de mois</span><b>${fmtDetail(totalRev - prevu)}</b>
+    </div>`;
+}
+
+// ============ VUE ANNUELLE ============
+function renderAnnual() {
+  const sel = document.getElementById('annYear');
+  if (!sel) return;
+  const nowKey = currentMonthKey();
+  const years = new Set([nowKey.slice(0, 4)]);
+  (data.historique || []).forEach(h => years.add(h.mois.slice(0, 4)));
+  const list = [...years].sort();
+  const keep = sel.value && years.has(sel.value) ? sel.value : nowKey.slice(0, 4);
+  sel.innerHTML = list.map(y => `<option value="${y}" ${y === keep ? 'selected' : ''}>${y}</option>`).join('');
+  const year = sel.value || keep;
+
+  const noms = ['Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'];
+  const rows = [];
+  for (let m = 1; m <= 12; m++) {
+    const key = year + '-' + String(m).padStart(2, '0');
+    let rev = null, dep = null, live = false;
+    const h = (data.historique || []).find(x => x.mois === key);
+    if (h) {
+      rev = (parseFloat(h.totalRev) || 0) + (parseFloat(h.totalRembourse) || 0);
+      dep = (parseFloat(h.totalDepPaye) || 0) + (parseFloat(h.totalAnnexe) || 0);
+    } else if (key === (data.currentMonth || nowKey)) {
+      const c = calc();
+      rev = c.totalRev;
+      dep = data.depenses.filter(d => d.paye).reduce((s, d) => s + (parseFloat(d.val) || 0), 0) +
+            data.annexeDep.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+      live = true;
+    }
+    rows.push({ nom: noms[m - 1], rev, dep, live });
+  }
+
+  const sumRev = rows.reduce((s, r) => s + (r.rev || 0), 0);
+  const sumDep = rows.reduce((s, r) => s + (r.dep || 0), 0);
+  document.getElementById('annTable').innerHTML = `
+    <table>
+      <thead><tr><th>Mois</th><th>Revenus</th><th>Dépenses</th><th>Solde</th></tr></thead>
+      <tbody>
+        ${rows.map(r => r.rev === null ? `<tr><td>${r.nom}</td><td colspan="3" style="color:var(--muted);">—</td></tr>` : `
+          <tr><td>${r.nom}${r.live ? ' <span class="pill soon">en cours</span>' : ''}</td>
+          <td>${fmtDetail(r.rev)}</td><td>${fmtDetail(r.dep)}</td>
+          <td style="font-weight:700;color:${r.rev - r.dep >= 0 ? 'var(--green)' : 'var(--red)'};">${fmtDetail(r.rev - r.dep)}</td></tr>`).join('')}
+        <tr style="font-weight:800;"><td>Total ${year}</td><td>${fmtDetail(sumRev)}</td><td>${fmtDetail(sumDep)}</td>
+          <td style="color:${sumRev - sumDep >= 0 ? 'var(--green)' : 'var(--red)'};">${fmtDetail(sumRev - sumDep)}</td></tr>
+      </tbody>
+    </table>`;
+
+  if (typeof Chart === 'undefined') return;
+  if (charts.annual) charts.annual.destroy();
+  charts.annual = new Chart(document.getElementById('chartAnnual'), {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.nom),
+      datasets: [
+        { label: 'Revenus', data: rows.map(r => r.rev), backgroundColor: '#16a34a', borderRadius: 4 },
+        { label: 'Dépenses', data: rows.map(r => r.dep), backgroundColor: '#dc2626', borderRadius: 4 }
+      ]
+    },
+    options: { plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } }, maintainAspectRatio: false }
+  });
+}
+
+// ============ TÂCHES ENFANTS ============
+function addTache() {
+  const text = document.getElementById('tacheText').value.trim();
+  if (!text) { toast('❌ Écris la tâche'); return; }
+  const enfant = document.getElementById('tacheEnfant').value;
+  const assignee = document.getElementById('tacheAssignee').value;
+  data.taches.push({ id: Date.now(), text, enfant, assignee, done: false, by: currentUserName() || '', at: new Date().toISOString() });
+  document.getElementById('tacheText').value = '';
+  refresh();
+  toast('✅ Tâche ajoutée pour ' + assignee);
+}
+
+function toggleTache(id) {
+  const t = data.taches.find(x => x.id === id);
+  if (t) t.done = !t.done;
+  refresh();
+}
+
+function deleteTache(id) {
+  data.taches = data.taches.filter(x => x.id !== id);
+  refresh();
+}
+
+function tacheHtml(t) {
+  return `
+    <div class="row-item ${t.done ? 'done' : ''}">
+      <div class="row-left">
+        <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTache(${t.id})" style="width:20px;height:20px;cursor:pointer;">
+        <div>
+          <div class="row-text">${esc(t.text)}</div>
+          <div class="row-sub">${esc(t.enfant || '')}${t.by ? ' · ajouté par ' + esc(t.by) : ''}</div>
+        </div>
+      </div>
+      <button class="del-btn" onclick="deleteTache(${t.id})">🗑</button>
+    </div>`;
+}
+
+function openTachesFor(name) { return data.taches.filter(t => !t.done && t.assignee === name); }
+
+function renderTaches() {
+  const el = document.getElementById('tachesHysen');
+  if (!el) return;
+  const empty = '<div style="color:var(--muted);padding:8px 0;">Rien à faire 🎉</div>';
+  ['Hysen', 'Egzona'].forEach(n => {
+    const l = openTachesFor(n);
+    document.getElementById('taches' + n).innerHTML = l.map(tacheHtml).join('') || empty;
+  });
+  const done = data.taches.filter(t => t.done);
+  document.getElementById('tachesDone').innerHTML = done.map(tacheHtml).join('') || '<div style="color:var(--muted);padding:8px 0;">Aucune tâche terminée</div>';
+  const me = currentUserName();
+  if (me) document.getElementById('tacheAssignee').value = document.getElementById('tacheAssignee').dataset.touched ? document.getElementById('tacheAssignee').value : me;
+  updateTaskBadge();
+  const ni = document.getElementById('notifInfo');
+  if (ni) {
+    ni.textContent = !('Notification' in window) ? 'Alertes non disponibles sur ce navigateur.'
+      : Notification.permission === 'granted' ? '✅ Alertes activées (appli ouverte ou en arrière-plan).'
+      : Notification.permission === 'denied' ? '⛔ Alertes bloquées dans le navigateur.' : '';
+  }
+}
+
+function updateTaskBadge() {
+  const me = currentUserName();
+  const n = me ? openTachesFor(me).length : data.taches.filter(t => !t.done).length;
+  const b = document.getElementById('navBadgeTaches');
+  if (b) { b.textContent = n; b.style.display = n > 0 ? 'inline-block' : 'none'; }
+  document.title = (n > 0 ? '(' + n + ') ' : '') + 'Famille Tolaj — Gestion Financière PRO';
+  const al = document.getElementById('dashAlerts');
+  if (al) {
+    al.innerHTML = n > 0 ? `<div class="alert-card" onclick="document.querySelectorAll('nav button')[2].click()">👧 ${me ? 'Tu as ' : ''}${n} tâche${n > 1 ? 's' : ''} à faire pour les enfants${me ? '' : ' (ouvertes)'} →</div>` : '';
+  }
+}
+
+function notifyNewTasks(list) {
+  const txt = list.length === 1 ? 'Nouvelle tâche : ' + list[0].text : list.length + ' nouvelles tâches pour toi';
+  toast('👧 ' + txt);
+  try {
+    if ('Notification' in window && Notification.permission === 'granted') new Notification('Famille Tolaj', { body: txt });
+  } catch (e) {}
+}
+
+function enableNotifications() {
+  if (!('Notification' in window)) { toast('Alertes non disponibles ici'); return; }
+  Notification.requestPermission().then(() => renderTaches());
+}
+
+// ============ OBJECTIFS ============
+function openObjectifModal(id) {
+  const o = id ? data.objectifs.find(x => x.id === id) : null;
+  document.getElementById('objModalTitle').textContent = o ? '✏️ Modifier l\'objectif' : '🎯 Nouvel objectif';
+  document.getElementById('objId').value = o ? o.id : '';
+  document.getElementById('objNom').value = o ? o.nom : '';
+  document.getElementById('objCible').value = o ? o.cible : '';
+  document.getElementById('objActuel').value = o ? o.actuel : '';
+  document.getElementById('objEcheance').value = o ? (o.echeance || '') : '';
+  document.getElementById('modalObjectif').style.display = 'flex';
+}
+
+function closeObjectifModal() { document.getElementById('modalObjectif').style.display = 'none'; }
+
+function saveObjectifModal() {
+  const nom = document.getElementById('objNom').value.trim();
+  const cible = parseFloat(document.getElementById('objCible').value) || 0;
+  const actuel = parseFloat(document.getElementById('objActuel').value) || 0;
+  const echeance = document.getElementById('objEcheance').value || '';
+  if (!nom || cible <= 0) { toast('❌ Nom et montant à atteindre requis'); return; }
+  const id = parseInt(document.getElementById('objId').value, 10);
+  if (id) {
+    const o = data.objectifs.find(x => x.id === id);
+    if (o) Object.assign(o, { nom, cible, actuel, echeance });
+  } else {
+    data.objectifs.push({ id: Date.now(), nom, cible, actuel, echeance });
+  }
+  closeObjectifModal();
+  refresh();
+  toast('✅ Objectif enregistré');
+}
+
+function setObjectifActuel(id, v) {
+  const o = data.objectifs.find(x => x.id === id);
+  if (o) { o.actuel = parseFloat(v) || 0; refresh(); }
+}
+
+function deleteObjectif(id) {
+  if (!confirm('Supprimer cet objectif ?')) return;
+  data.objectifs = data.objectifs.filter(x => x.id !== id);
+  refresh();
+}
+
+function renderObjectifs() {
+  const grid = document.getElementById('objectifsGrid');
+  if (!grid) return;
+  Object.keys(charts).filter(k => k.startsWith('obj_')).forEach(k => { charts[k].destroy(); delete charts[k]; });
+
+  const list = data.objectifs;
+  const totC = list.reduce((s, o) => s + (parseFloat(o.cible) || 0), 0);
+  const totA = list.reduce((s, o) => s + (parseFloat(o.actuel) || 0), 0);
+  const pctTot = totC > 0 ? Math.min(100, totA / totC * 100) : 0;
+  document.getElementById('objResume').innerHTML = list.length ? `
+    <div style="display:flex;justify-content:space-between;font-size:.9rem;margin-bottom:6px;">
+      <span>Total mis de côté : <b>${fmtDetail(totA)}</b></span><span>Total visé : <b>${fmtDetail(totC)}</b></span>
+    </div>
+    <div class="big-bar"><div style="width:${pctTot.toFixed(0)}%;background:var(--green);"></div></div>
+    <div style="font-size:.8rem;color:var(--muted);margin-top:6px;">${pctTot.toFixed(0)}% de l'ensemble de tes objectifs</div>`
+    : '<div style="color:var(--muted);">Aucun objectif pour l\'instant. Clique sur « + Nouvel objectif » : chaque objectif aura son propre graphique.</div>';
+
+  grid.innerHTML = list.map(o => {
+    const cible = parseFloat(o.cible) || 0, actuel = parseFloat(o.actuel) || 0;
+    const reste = Math.max(0, cible - actuel);
+    const pct = cible > 0 ? Math.min(100, actuel / cible * 100) : 0;
+    let info = '';
+    if (reste <= 0) info = '<span class="pill ok" style="background:rgba(22,163,74,.14);color:var(--green);">🎉 Objectif atteint</span>';
+    else if (o.echeance) {
+      const d = dueInfo(o.echeance);
+      if (d.diff < 0) info = '<span class="pill late">Date cible dépassée</span>';
+      else {
+        const mois = Math.max(1, Math.ceil(d.diff / 30.44));
+        info = `<span class="pill soon">${new Date(o.echeance + 'T00:00:00').toLocaleDateString('fr-CH')}</span> <span class="row-sub">→ ${fmtDetail(reste / mois)} / mois</span>`;
+      }
+    }
+    return `
+      <div class="obj-card">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+          <div style="font-weight:700;font-size:1.05rem;">${esc(o.nom)}</div>
+          <div style="white-space:nowrap;">
+            <button class="del-btn" onclick="openObjectifModal(${o.id})" title="Modifier">✏️</button>
+            <button class="del-btn" onclick="deleteObjectif(${o.id})" title="Supprimer">🗑</button>
+          </div>
+        </div>
+        <div class="obj-chart"><canvas id="chartObj_${o.id}"></canvas><div class="obj-center">${pct.toFixed(0)}%</div></div>
+        <div style="display:flex;justify-content:space-between;font-size:.9rem;"><span>Actuel</span><span>Objectif</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+          <input class="edit-input" type="number" step="0.01" value="${actuel}" onchange="setObjectifActuel(${o.id}, this.value)" style="max-width:120px;font-weight:700;">
+          <b>${fmtDetail(cible)}</b>
+        </div>
+        <div style="font-size:.85rem;color:var(--muted);margin-bottom:6px;">Reste : <b style="color:var(--text)">${fmtDetail(reste)}</b></div>
+        <div>${info}</div>
+      </div>`;
+  }).join('');
+
+  if (typeof Chart === 'undefined') return;
+  list.forEach(o => {
+    const cible = parseFloat(o.cible) || 0, actuel = parseFloat(o.actuel) || 0;
+    const cv = document.getElementById('chartObj_' + o.id);
+    if (!cv) return;
+    charts['obj_' + o.id] = new Chart(cv, {
+      type: 'doughnut',
+      data: { labels: ['Mis de côté', 'Reste à épargner'], datasets: [{ data: [Math.min(actuel, cible), Math.max(0, cible - actuel)], backgroundColor: ['#16a34a', getComputedStyle(document.body).getPropertyValue('--border').trim() || '#e5e7eb'], borderWidth: 0 }] },
+      options: { plugins: { legend: { display: false } }, cutout: '72%', maintainAspectRatio: false }
+    });
+  });
+}
+
+// ============ PATRIMOINE ============
+function renderPatrimoine() {
+  const grid = document.getElementById('patGrid');
+  if (!grid) return;
+  Object.keys(charts).filter(k => k.startsWith('pat_')).forEach(k => { charts[k].destroy(); delete charts[k]; });
+
+  const list = data.patrimoine;
+  const totA = list.reduce((s, p) => s + (parseFloat(p.actuel) || 0), 0);
+  const totC = list.reduce((s, p) => s + (parseFloat(p.cible) || 0), 0);
+  // progression calculée uniquement sur les éléments qui ont un objectif
+  const avecObj = list.filter(p => (parseFloat(p.cible) || 0) > 0);
+  const aObj = avecObj.reduce((s, p) => s + Math.min(parseFloat(p.actuel) || 0, parseFloat(p.cible) || 0), 0);
+  const cObj = avecObj.reduce((s, p) => s + (parseFloat(p.cible) || 0), 0);
+  const pct = cObj > 0 ? aObj / cObj * 100 : 0;
+
+  document.getElementById('patTotal').textContent = fmt(totA);
+  document.getElementById('patCibleTot').textContent = fmt(totC);
+  document.getElementById('patPct').textContent = cObj > 0 ? pct.toFixed(0) + '%' : '—';
+
+  document.getElementById('patResume').innerHTML = list.length ? `
+    ${cObj > 0 ? `<div style="display:flex;justify-content:space-between;font-size:.9rem;margin-bottom:6px;"><span>Atteint : <b>${fmtDetail(aObj)}</b></span><span>Objectifs : <b>${fmtDetail(cObj)}</b></span></div>
+    <div class="big-bar"><div style="width:${Math.min(100, pct).toFixed(0)}%;background:var(--green);"></div></div>
+    <div style="font-size:.8rem;color:var(--muted);margin-top:6px;">${pct.toFixed(0)}% des éléments qui ont un objectif</div>` : '<div style="color:var(--muted);">Ajoute un objectif sur un élément pour suivre ta progression.</div>'}
+    <div style="margin-top:14px;font-size:.9rem;display:flex;justify-content:space-between;"><span>Patrimoine actuel total</span><b>${fmtDetail(totA)}</b></div>`
+    : '<div style="color:var(--muted);">Rien pour l\'instant. Clique sur « + Ajouter » : fonds d\'urgence, 3e pilier, investissements, immobilier…</div>';
+
+  grid.innerHTML = list.map(p => {
+    const actuel = parseFloat(p.actuel) || 0, cible = parseFloat(p.cible) || 0;
+    const reste = Math.max(0, cible - actuel);
+    const pc = cible > 0 ? Math.min(100, actuel / cible * 100) : 0;
+    const centre = cible > 0 ? pc.toFixed(0) + '%' : fmt(actuel);
+    const info = cible <= 0 ? '<span class="row-sub">Pas d\'objectif défini</span>'
+      : reste <= 0 ? '<span class="pill ok" style="background:rgba(22,163,74,.14);color:var(--green);">🎉 Objectif atteint</span>'
+      : `<span class="row-sub">Reste : <b style="color:var(--text)">${fmtDetail(reste)}</b></span>`;
+    return `
+      <div class="obj-card">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+          <div><div style="font-weight:700;font-size:1.05rem;">${esc(p.nom)}</div><div class="row-sub">${esc(p.categorie || '')}</div></div>
+          <div style="white-space:nowrap;">
+            <button class="del-btn" onclick="openPatModal(${p.id})" title="Modifier">✏️</button>
+            <button class="del-btn" onclick="deletePat(${p.id})" title="Supprimer">🗑</button>
+          </div>
+        </div>
+        <div class="obj-chart"><canvas id="chartPat_${p.id}"></canvas><div class="obj-center" style="${cible > 0 ? '' : 'font-size:.95rem;'}">${centre}</div></div>
+        <div style="display:flex;justify-content:space-between;font-size:.9rem;"><span>Actuel</span><span>Objectif</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+          <input class="edit-input" type="number" step="0.01" value="${actuel}" onchange="setPatActuel(${p.id}, this.value)" style="max-width:120px;font-weight:700;">
+          <b>${cible > 0 ? fmtDetail(cible) : '—'}</b>
+        </div>
+        <div>${info}</div>
+      </div>`;
+  }).join('');
+
+  if (typeof Chart === 'undefined') return;
+  const border = getComputedStyle(document.body).getPropertyValue('--border').trim() || '#e5e7eb';
+  list.forEach(p => {
+    const cv = document.getElementById('chartPat_' + p.id);
+    if (!cv) return;
+    const actuel = parseFloat(p.actuel) || 0, cible = parseFloat(p.cible) || 0;
+    const dataset = cible > 0
+      ? { data: [Math.min(actuel, cible), Math.max(0, cible - actuel)], backgroundColor: ['#4f46e5', border], borderWidth: 0 }
+      : { data: [1], backgroundColor: ['#4f46e5'], borderWidth: 0 };
+    charts['pat_' + p.id] = new Chart(cv, {
+      type: 'doughnut',
+      data: { labels: cible > 0 ? ['Actuel', 'Reste à atteindre'] : ['Actuel'], datasets: [dataset] },
+      options: { plugins: { legend: { display: false }, tooltip: { enabled: cible > 0 } }, cutout: '72%', maintainAspectRatio: false }
+    });
+  });
+
+  // répartition par catégorie
+  const cats = {};
+  list.forEach(p => { const c = p.categorie || 'Autre'; cats[c] = (cats[c] || 0) + (parseFloat(p.actuel) || 0); });
+  if (charts.patComp) charts.patComp.destroy();
+  charts.patComp = new Chart(document.getElementById('chartPatrimoineComp'), {
+    type: 'doughnut',
+    data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: ['#3b82f6', '#8b5cf6', '#f59e0b', '#22c55e', '#ef4444', '#06b6d4', '#ec4899'], borderWidth: 2, borderColor: getComputedStyle(document.body).getPropertyValue('--card').trim() }] },
+    options: { plugins: { legend: { position: 'bottom' } }, cutout: '55%', maintainAspectRatio: false }
+  });
+}
+
+function openPatModal(id) {
+  const p = id ? data.patrimoine.find(x => x.id === id) : null;
+  document.getElementById('patModalTitle').textContent = p ? '✏️ Modifier' : '🏦 Ajouter au patrimoine';
+  document.getElementById('patId').value = p ? p.id : '';
+  document.getElementById('patNom').value = p ? p.nom : '';
+  document.getElementById('patCategorie').value = p ? (p.categorie || 'Autre') : "Fonds d'urgence";
+  document.getElementById('patActuel').value = p ? p.actuel : '';
+  document.getElementById('patCible').value = p && p.cible ? p.cible : '';
+  document.getElementById('modalPat').style.display = 'flex';
+}
+function closePatModal() { document.getElementById('modalPat').style.display = 'none'; }
+function savePatModal() {
+  const nom = document.getElementById('patNom').value.trim();
+  const categorie = document.getElementById('patCategorie').value;
+  const actuel = parseFloat(document.getElementById('patActuel').value) || 0;
+  const cible = parseFloat(document.getElementById('patCible').value) || 0;
+  if (!nom) { toast('❌ Donne un nom'); return; }
+  const id = parseInt(document.getElementById('patId').value, 10);
+  if (id) {
+    const p = data.patrimoine.find(x => x.id === id);
+    if (p) Object.assign(p, { nom, categorie, actuel, cible });
+  } else {
+    data.patrimoine.push({ id: Date.now(), nom, categorie, actuel, cible });
+  }
+  closePatModal();
+  refresh();
+  toast('✅ Patrimoine enregistré');
+}
+function setPatActuel(id, v) {
+  const p = data.patrimoine.find(x => x.id === id);
+  if (p) { p.actuel = parseFloat(v) || 0; refresh(); }
+}
+function deletePat(id) {
+  if (!confirm('Supprimer cet élément du patrimoine ?')) return;
+  data.patrimoine = data.patrimoine.filter(x => x.id !== id);
+  refresh();
+}
+
+function showPatrimoineTab(tab) {
+  document.getElementById('patrimoineUrgence').style.display = tab === 'urgence' ? 'block' : 'none';
+  document.getElementById('patrimoineEpargne').style.display = tab === 'epargne' ? 'block' : 'none';
+  document.getElementById('patrimoineInvestissements').style.display = tab === 'investissements' ? 'block' : 'none';
+
+  document.getElementById('tabUrgence').style.background = tab === 'urgence' ? 'var(--primary)' : 'transparent';
+  document.getElementById('tabUrgence').style.color = tab === 'urgence' ? 'white' : 'var(--text)';
+
+  document.getElementById('tabEpargne').style.background = tab === 'epargne' ? 'var(--primary)' : 'transparent';
+  document.getElementById('tabEpargne').style.color = tab === 'epargne' ? 'white' : 'var(--text)';
+
+  document.getElementById('tabInvestissements').style.background = tab === 'investissements' ? 'var(--primary)' : 'transparent';
+  document.getElementById('tabInvestissements').style.color = tab === 'investissements' ? 'white' : 'var(--text)';
+}
+
+// ============ VACANCES ============
+function addVacation() {
+  const dest = document.getElementById('vacDest').value.trim();
+  const budget = parseFloat(document.getElementById('vacBudget').value) || 0;
+  const debut = document.getElementById('vacDebut').value;
+  const fin = document.getElementById('vacFin').value;
+
+  if (!dest || !budget || !debut || !fin) {
+    toast('❌ Remplissez tous les champs');
+    return;
+  }
+
+  data.vacations.push({
+    id: Date.now(),
+    dest,
+    budget,
+    debut,
+    fin,
+    depenses: [],
+    epargne: [],
+  });
+
+  document.getElementById('vacDest').value = '';
+  document.getElementById('vacBudget').value = '';
+  document.getElementById('vacDebut').value = '';
+  document.getElementById('vacFin').value = '';
+
+  renderVacations();
+  refresh();
+  toast('✅ Voyage créé');
+}
+
+function renderVacations() {
+  document.getElementById('vacationsList').innerHTML = data.vacations.map((v, vi) => {
+    const totalDep = v.depenses.reduce((s, d) => s + (parseFloat(d.val) || 0), 0);
+    const totalEp = v.epargne.reduce((s, e) => s + (parseFloat(e.val) || 0), 0);
+    const restant = v.budget - totalDep;
+
+    return `
+      <div class="vacation-card">
+        <div style="display:flex;justify-content:space-between;align-items:start;">
+          <div style="flex:1;">
+            <div class="vacation-title">${v.dest}</div>
+            <div class="vacation-stat"><span class="vacation-stat-label">Dates:</span><span class="vacation-stat-value">${v.debut} → ${v.fin}</span></div>
+            <div class="vacation-stat"><span class="vacation-stat-label">Budget:</span><span class="vacation-stat-value">${fmt(v.budget)}</span></div>
+            <div class="vacation-stat"><span class="vacation-stat-label">Dépensé:</span><span class="vacation-stat-value" style="color:${totalDep > v.budget ? 'var(--red)' : 'var(--green)'};">${fmt(totalDep)}</span></div>
+            <div class="vacation-stat"><span class="vacation-stat-label">Restant:</span><span class="vacation-stat-value" style="color:${restant < 0 ? 'var(--red)' : 'var(--blue)'};">${fmt(restant)}</span></div>
+            <div class="vacation-stat"><span class="vacation-stat-label">Épargné:</span><span class="vacation-stat-value" style="color:var(--primary);">${fmt(totalEp)}</span></div>
+          </div>
+          <button class="del-btn" style="font-size:1.3rem;" onclick="data.vacations.splice(${vi},1);refresh()">🗑</button>
+        </div>
+
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <div style="font-weight:700;margin-bottom:8px;">💸 Ajouter dépense</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <input type="text" placeholder="Description" id="vdesc-${vi}" style="padding:8px;border:1px solid var(--border);border-radius:6px;">
+            <input type="number" placeholder="Montant" id="vval-${vi}" step="0.01" style="padding:8px;border:1px solid var(--border);border-radius:6px;">
+            <button class="add-btn" onclick="addVacationDep(${vi})" style="justify-content:center;padding:8px;">Ajouter</button>
+          </div>
+          <div style="margin-top:8px;">
+            ${v.depenses.map((d, di) => `<div style="padding:6px;background:rgba(91,79,207,.05);border-radius:4px;display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:4px;"><span>${d.desc}: ${fmt(d.val)}</span><button class="del-btn" onclick="data.vacations[${vi}].depenses.splice(${di},1);refresh()" style="padding:0;">🗑</button></div>`).join('')}
+          </div>
+        </div>
+
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <div style="font-weight:700;margin-bottom:8px;">💰 Tracker épargne</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <input type="text" placeholder="Mois/Semaine" id="eperdesc-${vi}" style="padding:8px;border:1px solid var(--border);border-radius:6px;">
+            <input type="number" placeholder="Montant" id="eperval-${vi}" step="0.01" style="padding:8px;border:1px solid var(--border);border-radius:6px;">
+            <button class="add-btn" onclick="addVacationEpargne(${vi})" style="justify-content:center;padding:8px;">Ajouter</button>
+          </div>
+          <div style="margin-top:8px;">
+            ${v.epargne.map((e, ei) => `<div style="padding:6px;background:rgba(34,197,94,.05);border-radius:4px;display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:4px;"><span>${e.desc}: ${fmt(e.val)}</span><button class="del-btn" onclick="data.vacations[${vi}].epargne.splice(${ei},1);refresh()" style="padding:0;">🗑</button></div>`).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('') || '<div style="color:var(--muted);text-align:center;padding:20px;">Aucun voyage</div>';
+}
+
+function addVacationDep(vi) {
+  const desc = document.getElementById(`vdesc-${vi}`).value.trim();
+  const val = parseFloat(document.getElementById(`vval-${vi}`).value) || 0;
+  if (!desc || val <= 0) return;
+
+  data.vacations[vi].depenses.push({ id: Date.now(), desc, val });
+  document.getElementById(`vdesc-${vi}`).value = '';
+  document.getElementById(`vval-${vi}`).value = '';
+  renderVacations();
+  refresh();
+  toast('✅ Dépense ajoutée');
+}
+
+function addVacationEpargne(vi) {
+  const desc = document.getElementById(`eperdesc-${vi}`).value.trim();
+  const val = parseFloat(document.getElementById(`eperval-${vi}`).value) || 0;
+  if (!desc || val <= 0) return;
+
+  data.vacations[vi].epargne.push({ id: Date.now(), desc, val });
+  document.getElementById(`eperdesc-${vi}`).value = '';
+  document.getElementById(`eperval-${vi}`).value = '';
+  renderVacations();
+  refresh();
+  toast('✅ Épargne notée');
+}
+
+// ============ MODALS ============
+function openModal(type) {
+  document.getElementById('modalType').value = type;
+  document.getElementById('modalTitle').textContent = type === 'rev' ? '➕ Ajouter revenu' : '➕ Ajouter dépense';
+  document.getElementById('fDesc').value = '';
+  document.getElementById('fVal').value = '';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function saveModal() {
+  const type = document.getElementById('modalType').value;
+  const desc = document.getElementById('fDesc').value.trim();
+  const val = parseFloat(document.getElementById('fVal').value) || 0;
+  const ftype = document.getElementById('fType').value;
+
+  if (!desc || val <= 0) {
+    toast('❌ Remplissez tous les champs');
+    return;
+  }
+
+  if (type === 'rev') {
+    data.revenus.push({ id: Date.now(), desc, val, type: ftype });
+  } else {
+    data.depenses.push({ id: Date.now(), desc, val, type: ftype, cat: 'Autre' });
+  }
+
+  closeModal();
+  refresh();
+  toast('✅ Ajouté');
+}
+
+function openBudgetModal() {
+  const cat = prompt('Catégorie de budget:');
+  const budget = prompt('Montant budget (CHF):');
+
+  if (!cat || !budget) return;
+
+  data.budgets[cat] = parseFloat(budget) || 0;
+  refresh();
+  toast('✅ Budget ajouté');
+}
+
+function openEpargneModal() {
+  // Simple dialog pour ajouter épargne
+  const membre = prompt('Membre (Hysen/Egzona/Luna/Anisa):');
+  const pilier = prompt('Pilier (3A/3B):');
+  const annuel = prompt('Montant annuel (CHF):');
+
+  if (!membre || !pilier || !annuel) return;
+
+  data.epargne.push({
+    id: Date.now(),
+    membre,
+    pilier,
+    annuel: parseFloat(annuel) || 0,
+    montant: 0,
+    etab: ''
+  });
+
+  refresh();
+  toast('✅ Épargne ajoutée');
+}
+
+function openInvestissementModal() {
+  const nom = prompt('Nom de l\'investissement:');
+  const type = prompt('Type (Actions/ETF/Crypto/Obligations/Autre):');
+  const val = prompt('Valeur (CHF):');
+
+  if (!nom || !type || !val) return;
+
+  data.investissements.push({
+    id: Date.now(),
+    nom,
+    type,
+    val: parseFloat(val) || 0
+  });
+
+  refresh();
+  toast('✅ Investissement ajouté');
+}
+
+function updatePatrimoine() {
+  data.urgence.solde = parseFloat(document.getElementById('urgenceSolde').value) || 0;
+  data.urgence.objectif = parseFloat(document.getElementById('urgenceObjectif').value) || 0;
+  refresh();
+  toast('✅ Fonds d\'urgence mis à jour');
+}
+
+// ============ CHARTS ============
+let charts = {};
+
+function renderCharts(totalRev, totalDep) {
+  if (typeof Chart === 'undefined') return;
+  const css = getComputedStyle(document.body);
+  Chart.defaults.color = css.getPropertyValue('--muted').trim() || '#6b7280';
+  Chart.defaults.borderColor = css.getPropertyValue('--border').trim() || '#e5e7eb';
+
+  const revLabels = data.revenus.map(r => (r.desc || '').substring(0, 20)).slice(0, 8);
+  const revVals = data.revenus.map(r => parseFloat(r.val) || 0).slice(0, 8);
+
+  const depLabels = [...new Set(data.depenses.map(d => d.cat || 'N/A'))].slice(0, 8);
+  const depVals = depLabels.map(cat => data.depenses.filter(d => (d.cat || 'N/A') === cat).reduce((s, d) => s + (parseFloat(d.val) || 0), 0));
+
+  const COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#22c55e', '#ef4444', '#06b6d4', '#ec4899', '#10b981'];
+  const cardColor = css.getPropertyValue('--card').trim();
+
+  if (charts.rev) charts.rev.destroy();
+  charts.rev = new Chart(document.getElementById('chartRev'), {
+    type: 'doughnut',
+    data: { labels: revLabels, datasets: [{ data: revVals, backgroundColor: COLORS, borderWidth: 2, borderColor: cardColor }] },
+    options: { plugins: { legend: { position: 'bottom' } }, cutout: '55%', maintainAspectRatio: false }
+  });
+
+  if (charts.dep) charts.dep.destroy();
+  charts.dep = new Chart(document.getElementById('chartDep'), {
+    type: 'doughnut',
+    data: { labels: depLabels, datasets: [{ data: depVals, backgroundColor: COLORS, borderWidth: 2, borderColor: cardColor }] },
+    options: { plugins: { legend: { position: 'bottom' } }, cutout: '55%', maintainAspectRatio: false }
+  });
+}
+
+// ============ DARK MODE ============
+function toggleDarkMode() {
+  document.body.classList.toggle('dark-mode');
+  localStorage.setItem('dark-mode', document.body.classList.contains('dark-mode'));
+  refresh();
+}
+
+// ============ EXPORT PDF ============
+function exportPDF() {
+  const element = document.querySelector('main');
+  const opt = {
+    margin: 10,
+    filename: `Rapport_Famille_Tolaj_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+  };
+  html2pdf().set(opt).from(element).save();
+  toast('✅ PDF généré');
+}
+
+// ============ UTILS ============
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ============ INIT ============
+window.addEventListener('DOMContentLoaded', () => {
+  loadData();
+  checkNewMonth();
+  if (localStorage.getItem('dark-mode') === 'true') {
+    document.body.classList.add('dark-mode');
+  }
+  refresh();
+  if (window.__resolveAppReady) window.__resolveAppReady();
+  // Si le service en ligne ne répond pas, on le dit au lieu de rester bloqué
+  setTimeout(() => {
+    if (!window.__cloudStarted) {
+      showGate('offline', 'Impossible de joindre le service en ligne. Vérifie ta connexion internet. Tes données sur cet appareil sont intactes.');
+      setCloudStatus('⚠️ Hors ligne', 'err');
+    }
+  }, 8000);
+});
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD4nu2kYz7f3PrZanu5-y6_I9g0ObKw-yU",
+  authDomain: "famille-tolaj.firebaseapp.com",
+  projectId: "famille-tolaj",
+  storageBucket: "famille-tolaj.firebasestorage.app",
+  messagingSenderId: "312272041030",
+  appId: "1:312272041030:web:87394d972f902417b98647"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+// Un seul document partagé par la famille : toutes les données y sont stockées
+const ref = doc(db, 'familles', 'tolaj');
+
+let lastJson = null;      // dernière version connue de la base en ligne
+let saveTimer = null;
+let unsubscribe = null;
+
+function stopSync() {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  clearTimeout(saveTimer);
+  saveTimer = null;
+}
+
+async function pushJson(json, user) {
+  await setDoc(ref, { json: json, updatedAt: serverTimestamp(), updatedBy: user.email || '' });
+}
+
+// ---------- Connexion ----------
+window.cloudSignIn = async function () {
+  try {
+    if (auth.currentUser) await signOut(auth);
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    await signInWithPopup(auth, provider);
+  } catch (e) {
+    console.error(e);
+    let msg = 'Connexion impossible (' + (e.code || e.message) + ').';
+    if (e.code === 'auth/popup-blocked') msg = 'Le navigateur a bloqué la fenêtre de connexion. Autorise les fenêtres pop-up pour ce site, puis réessaie.';
+    else if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') msg = 'Connexion annulée. Clique sur le bouton pour réessayer.';
+    else if (e.code === 'auth/unauthorized-domain') msg = "Ce site n'est pas autorisé dans Firebase. Ajoute hyspiquebauer.github.io dans Authentication → Paramètres → Domaines autorisés.";
+    showGate('login', msg);
+  }
+};
+
+window.cloudSignOut = async function () {
+  try { await signOut(auth); } catch (e) { console.error(e); }
+};
+
+// ---------- Première synchronisation après connexion ----------
+async function initialSync(user) {
+  const snap = await getDoc(ref);
+  const localJson = getDataJson();
+  const hasLocal = localHasData();
+
+  if (snap.exists()) {
+    const remoteJson = snap.data().json;
+    let remoteObj = null;
+    try { remoteObj = JSON.parse(remoteJson); } catch (e) { remoteObj = null; }
+    const remoteHasData = dataHasContent(remoteObj);
+
+    if (!remoteHasData && hasLocal) {
+      // La base en ligne est vide mais cet appareil a des données : on envoie les données, on n'écrase jamais avec du vide
+      lastJson = localJson;
+      await pushJson(localJson, user);
+      clearDirty();
+    } else if (hasLocal && localJson !== remoteJson) {
+      // Les deux versions existent et diffèrent : on garde une copie de sécurité de cet appareil
+      backupLocalBeforeCloud(localJson);
+      if (isDirty() && confirm("Des modifications faites sur cet appareil n'ont pas encore été envoyées en ligne.\n\nOK = envoyer CES modifications et remplacer la version en ligne.\nAnnuler = reprendre la version en ligne (ces modifications seront perdues).")) {
+        lastJson = localJson;
+        await pushJson(localJson, user);
+      } else {
+        lastJson = remoteJson;
+        applyRemoteJson(remoteJson);
+        toast('☁️ Version en ligne chargée');
+      }
+      clearDirty();
+    } else {
+      lastJson = remoteJson;
+      if (localJson !== remoteJson) applyRemoteJson(remoteJson);
+      clearDirty();
+    }
+  } else {
+    if (hasLocal) {
+      // Première utilisation : les données de cet appareil montent en ligne
+      lastJson = localJson;
+      await pushJson(localJson, user);
+      toast('☁️ Tes données ont été envoyées en ligne');
+    } else {
+      lastJson = null;
+    }
+    clearDirty();
+  }
+
+  window.__cloudReady = true;
+  hideGate();
+  setCloudStatus('✅ ' + (user.email || 'connecté'), 'ok');
+  startSync();
+  if (window.refresh) window.refresh();
+}
+
+// ---------- Mises à jour venant d'un autre appareil ----------
+function startSync() {
+  unsubscribe = onSnapshot(ref, (snap) => {
+    if (snap.metadata && snap.metadata.hasPendingWrites) return;
+    if (!snap.exists()) return;
+    const j = snap.data().json;
+    if (j === lastJson) return;
+    if (saveTimer) return;               // une modification locale est sur le point de partir
+    lastJson = j;
+    toast('☁️ Données mises à jour depuis un autre appareil');
+    applyRemoteJson(j);
+  }, (err) => {
+    console.error(err);
+    setCloudStatus('⚠️ Synchronisation interrompue', 'err');
+  });
+}
+
+// ---------- Envoi des modifications ----------
+window.cloudSaveHook = function (json) {
+  if (!window.__cloudReady || !auth.currentUser) return;
+  if (json === lastJson) return;
+  if (lastJson === null && !localHasData()) return;   // on ne crée jamais une base vide
+  markDirty();
+  setCloudStatus('⏳ Enregistrement…', 'busy');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 700);
+};
+
+async function flush() {
+  saveTimer = null;
+  const user = auth.currentUser;
+  if (!user) return;
+  const json = getDataJson();
+  if (json === lastJson) { setCloudStatus('✅ ' + user.email, 'ok'); return; }
+  const previous = lastJson;
+  lastJson = json;
+  try {
+    await pushJson(json, user);
+    if (getDataJson() === json) clearDirty();
+    setCloudStatus('✅ ' + user.email, 'ok');
+  } catch (e) {
+    console.error(e);
+    lastJson = previous;
+    setCloudStatus('⚠️ Non enregistré en ligne', 'err');
+    toast("⚠️ Enregistrement en ligne échoué. La modification reste sur cet appareil.");
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && saveTimer) { clearTimeout(saveTimer); flush(); }
+});
+window.addEventListener('online', () => {
+  if (window.__cloudReady && typeof window.cloudSaveHook === 'function') window.cloudSaveHook(getDataJson());
+});
+
+// ---------- État de connexion ----------
+onAuthStateChanged(auth, async (user) => {
+  window.__cloudStarted = true;
+  await window.__appReadyPromise;       // attend que les données locales soient chargées
+  stopSync();
+  window.__userEmail = user ? user.email : null;
+  if (!user) {
+    window.__cloudReady = false;
+    setCloudStatus('☁️ Non connecté', 'off');
+    if (!window.__offlineMode) showGate('login', 'Connecte-toi avec ton compte Google pour accéder aux données de la famille.');
+    return;
+  }
+  window.__offlineMode = false;
+  showGate('loading', 'Synchronisation en cours…');
+  setCloudStatus('⏳ Synchronisation…', 'busy');
+  try {
+    await initialSync(user);
+  } catch (e) {
+    console.error(e);
+    window.__cloudReady = false;
+    if (e && e.code === 'permission-denied') {
+      showGate('denied', 'Accès refusé pour ' + (user.email || 'ce compte') + '. Seuls les comptes autorisés de la famille peuvent utiliser cette appli.');
+      setCloudStatus('⛔ Accès refusé', 'err');
+    } else {
+      showGate('offline', 'Impossible de joindre la base en ligne (' + ((e && (e.code || e.message)) || 'erreur inconnue') + '). Tes données sur cet appareil sont intactes.');
+      setCloudStatus('⚠️ Hors ligne', 'err');
+    }
+  }
+});
+</script>
+</body>
+</html>
